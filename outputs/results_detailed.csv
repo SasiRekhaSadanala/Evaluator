@@ -1,0 +1,21 @@
+submission_id,final_score,max_score,feedback,assignment_type,file
+Test 1,85.0,100,## Strengths,code,test_submission_1.py
+Test 1,85.0,100,✓ Code is organized with functions or classes.,code,test_submission_1.py
+Test 1,85.0,100,✓ Line length is appropriate for readability.,code,test_submission_1.py
+Test 1,85.0,100,✓ Code uses variable assignments (structured logic).,code,test_submission_1.py
+Test 1,85.0,100,✓ Substantial code submission (26 lines).,code,test_submission_1.py
+Test 1,85.0,100,✓ Code includes control flow (7 conditions/loops).,code,test_submission_1.py
+Test 1,85.0,100,## Areas for Improvement,code,test_submission_1.py
+Test 1,85.0,100,→ Ensure your solution directly addresses the problem statement.,code,test_submission_1.py
+Test 1,85.0,100,→ Add comments to explain your logic.,code,test_submission_1.py
+Test 1,85.0,100,→ Consider breaking code into more functions for reusability.,code,test_submission_1.py
+Test 2,88.0,100,## Strengths,code,test_submission_2.py
+Test 2,88.0,100,✓ Code is organized with functions or classes.,code,test_submission_2.py
+Test 2,88.0,100,✓ Line length is appropriate for readability.,code,test_submission_2.py
+Test 2,88.0,100,✓ Good modularization (6 functions/classes).,code,test_submission_2.py
+Test 2,88.0,100,✓ Code uses variable assignments (structured logic).,code,test_submission_2.py
+Test 2,88.0,100,✓ Substantial code submission (19 lines).,code,test_submission_2.py
+Test 2,88.0,100,✓ Code includes control flow (1 conditions/loops).,code,test_submission_2.py
+Test 2,88.0,100,## Areas for Improvement,code,test_submission_2.py
+Test 2,88.0,100,→ Ensure your solution directly addresses the problem statement.,code,test_submission_2.py
+Test 2,88.0,100,→ Add comments to explain your logic.,code,test_submission_2.py

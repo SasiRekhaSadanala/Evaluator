@@ -1,0 +1,26 @@
+{
+  "name": "Programming Assignment Rubric",
+  "version": "1.0",
+  "dimensions": {
+    "code": {
+      "weight": 0.6,
+      "max_score": 100,
+      "criteria": {
+        "approach": {"weight": 0.4, "max_score": 100},
+        "readability": {"weight": 0.2, "max_score": 100},
+        "structure": {"weight": 0.2, "max_score": 100},
+        "effort": {"weight": 0.2, "max_score": 100}
+      }
+    },
+    "content": {
+      "weight": 0.4,
+      "max_score": 100,
+      "criteria": {
+        "coverage": {"weight": 0.35, "max_score": 100},
+        "alignment": {"weight": 0.25, "max_score": 100},
+        "flow": {"weight": 0.2, "max_score": 100},
+        "completeness": {"weight": 0.2, "max_score": 100}
+      }
+    }
+  }
+}
