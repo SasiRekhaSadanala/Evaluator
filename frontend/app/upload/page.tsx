@@ -28,8 +28,8 @@ export default function UploadPage() {
         formData.append('files', file)
       })
 
-      // Default assignment type to code for now, can be expanded later
-      formData.append('assignment_type', 'code')
+      // Use the user-selected assignment type
+      formData.append('assignment_type', data.assignmentType)
 
       if (data.problemStatement) {
         formData.append('problem_statement', data.problemStatement)
@@ -38,6 +38,10 @@ export default function UploadPage() {
       if (data.rubric) {
         formData.append('rubric_json', data.rubric)
       }
+
+      // Log for debugging
+      console.log('Submitting assignment_type:', data.assignmentType);
+      console.log('Files:', data.files.map(f => f.name));
 
       // Call backend API
       const res = await fetch(`${API_BASE_URL}/api/evaluate`, {
@@ -127,10 +131,10 @@ export default function UploadPage() {
         {/* Message Banner */}
         {message && (
           <div className={`max-w-5xl mx-auto mb-8 p-4 rounded-xl border backdrop-blur-md flex items-center gap-3 animate-slide-up ${messageType === 'success'
-              ? 'bg-green-500/10 border-green-500/50 text-green-300'
-              : messageType === 'error'
-                ? 'bg-red-500/10 border-red-500/50 text-red-300'
-                : 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300'
+            ? 'bg-green-500/10 border-green-500/50 text-green-300'
+            : messageType === 'error'
+              ? 'bg-red-500/10 border-red-500/50 text-red-300'
+              : 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300'
             }`}>
             <span className="text-2xl">
               {messageType === 'success' ? '✅' : messageType === 'error' ? '🚫' : 'ℹ️'}

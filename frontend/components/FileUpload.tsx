@@ -11,6 +11,7 @@ interface FileUploadProps {
 export interface FileUploadData {
   files: File[]
   problemStatement: string
+  assignmentType: 'code' | 'content' | 'mixed'
   rubric: string | null
   rubricSource: 'text' | 'file'
 }
@@ -23,6 +24,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
   const rubricInputRef = useRef<HTMLInputElement>(null)
 
   const [problemStatement, setProblemStatement] = useState('')
+  const [assignmentType, setAssignmentType] = useState<'code' | 'content' | 'mixed'>('code')
   const [rubricSource, setRubricSource] = useState<'text' | 'file'>('text')
   const [rubricText, setRubricText] = useState('')
   const [rubricFile, setRubricFile] = useState<File | null>(null)
@@ -126,6 +128,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
       onSubmit({
         files,
         problemStatement,
+        assignmentType,
         rubric: finalRubric,
         rubricSource,
       })
@@ -176,8 +179,8 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
                 className={`relative group cursor-pointer transition-all duration-300 ease-in-out border-2 border-dashed rounded-xl h-64 flex flex-col items-center justify-center text-center p-8 ${dragActive
-                    ? 'border-indigo-500 bg-indigo-500/10 scale-[1.02]'
-                    : 'border-slate-600 hover:border-indigo-400 bg-slate-800/30 hover:bg-slate-800/50'
+                  ? 'border-indigo-500 bg-indigo-500/10 scale-[1.02]'
+                  : 'border-slate-600 hover:border-indigo-400 bg-slate-800/30 hover:bg-slate-800/50'
                   }`}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -254,6 +257,35 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
 
           {/* Right Column: Context & Rubric */}
           <div className="space-y-6">
+            {/* Assignment Type Selection */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span className="text-2xl">🎯</span> Assignment Type
+                </h2>
+                <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                  {(['code', 'content', 'mixed'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setAssignmentType(type)}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${assignmentType === type
+                        ? 'bg-indigo-500 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-slate-400">
+                {assignmentType === 'code' && "Best for evaluating logic, structure, and syntax in Python scripts."}
+                {assignmentType === 'content' && "Ideal for analyzing text quality, concepts, and structure in PDF/TXT."}
+                {assignmentType === 'mixed' && "Use both code and content analysis for comprehensive evaluation."}
+              </p>
+            </div>
+
             {/* Problem Statement */}
             <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
@@ -285,8 +317,8 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                     type="button"
                     onClick={() => setRubricSource('text')}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${rubricSource === 'text'
-                        ? 'bg-indigo-500 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                      ? 'bg-indigo-500 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
                       }`}
                   >
                     JSON
@@ -295,8 +327,8 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                     type="button"
                     onClick={() => setRubricSource('file')}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${rubricSource === 'file'
-                        ? 'bg-indigo-500 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                      ? 'bg-indigo-500 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
                       }`}
                   >
                     File

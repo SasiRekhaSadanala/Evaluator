@@ -1,21 +1,11 @@
 submission_id,final_score,max_score,feedback,assignment_type,file
-Test 1,85.0,100,## Strengths,code,test_submission_1.py
-Test 1,85.0,100,✓ Code is organized with functions or classes.,code,test_submission_1.py
-Test 1,85.0,100,✓ Line length is appropriate for readability.,code,test_submission_1.py
-Test 1,85.0,100,✓ Code uses variable assignments (structured logic).,code,test_submission_1.py
-Test 1,85.0,100,✓ Substantial code submission (26 lines).,code,test_submission_1.py
-Test 1,85.0,100,✓ Code includes control flow (7 conditions/loops).,code,test_submission_1.py
-Test 1,85.0,100,## Areas for Improvement,code,test_submission_1.py
-Test 1,85.0,100,→ Ensure your solution directly addresses the problem statement.,code,test_submission_1.py
-Test 1,85.0,100,→ Add comments to explain your logic.,code,test_submission_1.py
-Test 1,85.0,100,→ Consider breaking code into more functions for reusability.,code,test_submission_1.py
-Test 2,88.0,100,## Strengths,code,test_submission_2.py
-Test 2,88.0,100,✓ Code is organized with functions or classes.,code,test_submission_2.py
-Test 2,88.0,100,✓ Line length is appropriate for readability.,code,test_submission_2.py
-Test 2,88.0,100,✓ Good modularization (6 functions/classes).,code,test_submission_2.py
-Test 2,88.0,100,✓ Code uses variable assignments (structured logic).,code,test_submission_2.py
-Test 2,88.0,100,✓ Substantial code submission (19 lines).,code,test_submission_2.py
-Test 2,88.0,100,✓ Code includes control flow (1 conditions/loops).,code,test_submission_2.py
-Test 2,88.0,100,## Areas for Improvement,code,test_submission_2.py
-Test 2,88.0,100,→ Ensure your solution directly addresses the problem statement.,code,test_submission_2.py
-Test 2,88.0,100,→ Add comments to explain your logic.,code,test_submission_2.py
+Report_Result,68.0,100,## Strengths,content,Report.pdf
+Report_Result,68.0,100,✓ Well-organized (280 distinct sections).,content,Report.pdf
+Report_Result,68.0,100,✓ Sentence structure is clear and varied.,content,Report.pdf
+Report_Result,68.0,100,✓ Substantial content (555 words).,content,Report.pdf
+Report_Result,68.0,100,✓ Includes reasoning or evidence.,content,Report.pdf
+Report_Result,68.0,100,## Areas for Improvement,content,Report.pdf
+Report_Result,68.0,100,→ Good coverage (8/12 concepts).,content,Report.pdf
+Report_Result,68.0,100,"→ Missing: raise, technical, interactive, multi",content,Report.pdf
+Report_Result,68.0,100,→ Add more transition words to improve flow between ideas.,content,Report.pdf
+Report_Result,68.0,100,→ Add concrete examples to support your concepts.,content,Report.pdf

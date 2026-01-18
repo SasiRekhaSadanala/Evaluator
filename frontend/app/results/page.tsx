@@ -17,16 +17,15 @@ interface StudentResult {
 
 export default function ResultsPage() {
   const [results, setResults] = useState<StudentResult[]>([])
-  const [loading, setLoading] = useState(true)
   const [apiResponse, setApiResponse] = useState<EvaluationResponse | null>(null)
 
   useEffect(() => {
     // Load results from storage
     const storedResults = ResultsStore.getResults()
-    
+
     if (storedResults && storedResults.status === 'success' && storedResults.results) {
       setApiResponse(storedResults)
-      
+
       // Convert API results to display format
       const formattedResults: StudentResult[] = storedResults.results.map(
         (result, idx) => {
@@ -63,8 +62,6 @@ export default function ResultsPage() {
         },
       ])
     }
-
-    setLoading(false)
   }, [])
 
   const getStatusColor = (status: string) => {
@@ -205,15 +202,14 @@ export default function ResultsPage() {
               <div className="mb-6 bg-slate-800/50 rounded-full h-3 overflow-hidden border border-indigo-500/20">
                 <div
                   style={{ width: `${result.percentage}%` }}
-                  className={`h-full transition-all rounded-full ${
-                    result.percentage >= 90
-                      ? 'bg-gradient-to-r from-green-500 to-green-400'
-                      : result.percentage >= 80
+                  className={`h-full transition-all rounded-full ${result.percentage >= 90
+                    ? 'bg-gradient-to-r from-green-500 to-green-400'
+                    : result.percentage >= 80
                       ? 'bg-gradient-to-r from-cyan-500 to-cyan-400'
                       : result.percentage >= 70
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                      : 'bg-gradient-to-r from-red-500 to-red-400'
-                  }`}
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                        : 'bg-gradient-to-r from-red-500 to-red-400'
+                    }`}
                 />
               </div>
 
@@ -259,112 +255,6 @@ export default function ResultsPage() {
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-lg transition-all hover:shadow-lg hover:shadow-green-500/30"
             >
               📥 Download Detailed CSV
-            </a>
-          )}
-        </div>
-      </div>
-    </main>
-  )
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <p className="text-gray-600 text-sm font-semibold mb-2">Lowest Score</p>
-            <p className="text-3xl font-bold text-red-600">
-              {Math.min(...results.map(r => r.percentage))}%
-            </p>
-          </div>
-        </div>
-
-        {/* Results List */}
-        <div className="space-y-4">
-          {results.map((result) => (
-            <div
-              key={result.id}
-              className={`border-l-4 rounded-lg shadow-md p-6 ${getStatusColor(
-                result.status
-              )}`}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {result.name}
-                  </h3>
-                  <span
-                    className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
-                      result.status
-                    )}`}
-                  >
-                    {result.status.replace('-', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className={`text-4xl font-bold ${getScoreColor(result.percentage)}`}>
-                    {result.percentage}%
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {result.score}/{result.maxScore}
-                  </p>
-                </div>
-              </div>
-
-              {/* Score Bar */}
-              <div className="mb-4 bg-gray-300 rounded-full h-2 overflow-hidden">
-                <div
-                  style={{ width: `${result.percentage}%` }}
-                  className={`h-full transition-all ${
-                    result.percentage >= 90
-                      ? 'bg-green-500'
-                      : result.percentage >= 80
-                      ? 'bg-blue-500'
-                      : result.percentage >= 70
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
-                  }`}
-                />
-              </div>
-
-              {/* Feedback */}
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">
-                  Feedback:
-                </p>
-                <ul className="space-y-1">
-                  {result.feedback.map((item, idx) => (
-                    <li key={idx} className="text-sm text-gray-700 flex">
-                      <span className="mr-2">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-4 mt-8">
-          <Link
-            href="/upload"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            Evaluate More Submissions
-          </Link>
-          {apiResponse?.csv_output_path && (
-            <a
-              href={apiResponse.csv_output_path}
-              download
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              📥 Download CSV (Summary)
-            </a>
-          )}
-          {apiResponse?.csv_detailed_output_path && (
-            <a
-              href={apiResponse.csv_detailed_output_path}
-              download
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              📥 Download CSV (Detailed)
             </a>
           )}
         </div>

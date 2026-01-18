@@ -16,6 +16,7 @@ class ContentEvaluationAgent(EvaluationAgent):
                 - student_content (str): The student's text content
                 - rubric (dict): Evaluation criteria with key concepts, OR
                 - ideal_reference (str): Reference content for comparison
+                - problem_statement (str): Task description for auto-extraction
 
         Returns:
             Dictionary with:
@@ -26,12 +27,13 @@ class ContentEvaluationAgent(EvaluationAgent):
         student_content = input_data.get("student_content", "")
         rubric = input_data.get("rubric", {})
         ideal_reference = input_data.get("ideal_reference", "")
+        problem_statement = input_data.get("problem_statement", "")
 
         feedback = []
         scores = {}
 
-        # Extract key concepts from rubric or reference
-        key_concepts = self._extract_key_concepts(rubric, ideal_reference)
+        # Extract key concepts from rubric, reference, or problem statement
+        key_concepts = self._extract_key_concepts(rubric, ideal_reference, problem_statement)
 
         # Analyze concept coverage
         coverage_score = self._evaluate_concept_coverage(
@@ -53,12 +55,12 @@ class ContentEvaluationAgent(EvaluationAgent):
         completeness_score = self._evaluate_completeness(student_content, feedback)
         scores["completeness"] = completeness_score
 
-        # Calculate total score with weights
+        # Calculate total score with weights (prioritize concept coverage heavily)
         weights = {
-            "coverage": 0.35,
-            "alignment": 0.25,
-            "flow": 0.2,
-            "completeness": 0.2,
+            "coverage": 0.60,      # Increased: task-specific concepts are most important
+            "alignment": 0.25,     # Alignment with requirements
+            "flow": 0.08,          # Decreased: writing style is secondary
+            "completeness": 0.07,  # Decreased: writing style is secondary
         }
 
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
@@ -70,12 +72,18 @@ class ContentEvaluationAgent(EvaluationAgent):
             "feedback": feedback,
         }
 
-    def _extract_key_concepts(self, rubric: dict, ideal_reference: str) -> List[str]:
-        """Extract key concepts from rubric or reference."""
+    def _extract_key_concepts(self, rubric: dict, ideal_reference: str, problem_statement: str = "") -> List[str]:
+        """Extract key concepts from rubric, reference, or problem statement.
+        
+        Priority order:
+        1. Explicit rubric concepts (highest priority)
+        2. Reference content keywords
+        3. Auto-extracted from problem statement (fallback)
+        """
         concepts = []
 
+        # Priority 1: Explicit rubric concepts
         if rubric:
-            # Extract from rubric concepts or criteria
             if "concepts" in rubric:
                 concepts.extend(rubric["concepts"])
             if "criteria" in rubric:
@@ -85,12 +93,66 @@ class ContentEvaluationAgent(EvaluationAgent):
                 elif isinstance(criteria, dict):
                     concepts.extend(criteria.keys())
 
+        # Priority 2: Reference content
         if ideal_reference:
-            # Extract key terms (longer words) from reference
             words = re.findall(r"\b\w{4,}\b", ideal_reference.lower())
-            concepts.extend(list(set(words))[:10])  # Top unique words
+            concepts.extend(list(set(words))[:10])
+
+        # Priority 3: Auto-extract from problem statement (fallback)
+        if not concepts and problem_statement:
+            task_concepts = self._extract_task_concepts(problem_statement)
+            concepts.extend(task_concepts)
 
         return list(set(concepts))  # Remove duplicates
+    
+    def _extract_task_concepts(self, problem_statement: str) -> List[str]:
+        """Auto-extract task-specific concepts from problem statement.
+        
+        Extracts domain-specific terms by:
+        - Filtering out common stopwords
+        - Prioritizing multi-word phrases and technical terms
+        - Keeping words 4+ characters
+        - Filtering generic verbs and adjectives
+        """
+        # Common stopwords to filter out
+        stopwords = {
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+            "of", "with", "from", "by", "as", "is", "was", "are", "were", "be",
+            "been", "being", "have", "has", "had", "do", "does", "did", "will",
+            "would", "should", "could", "may", "might", "must", "can", "this",
+            "that", "these", "those", "your", "their", "our", "its", "his", "her",
+            # Additional generic words to filter
+            "make", "create", "provide", "include", "ensure", "allow", "enable",
+            "support", "help", "need", "want", "give", "take", "show", "tell",
+            "huge", "large", "small", "good", "bad", "best", "better", "more",
+            "less", "most", "least", "very", "much", "many", "some", "all",
+            "each", "every", "both", "either", "neither", "other", "another",
+            "such", "same", "different", "new", "old", "first", "last", "next",
+            "previous", "following", "above", "below", "between", "among",
+            "expert", "hours", "challenge", "statement", "detailed", "report",
+            "proposed", "solution", "plan", "problem"
+        }
+        
+        # Extract words 4+ characters
+        words = re.findall(r"\b\w{4,}\b", problem_statement.lower())
+        
+        # Filter stopwords and generic terms
+        task_concepts = [w for w in set(words) if w not in stopwords]
+        
+        # Prioritize technical/domain terms (words with specific patterns)
+        # Keep terms that look like technical concepts (contain numbers, capitals in original, etc.)
+        domain_terms = []
+        for concept in task_concepts:
+            # Skip if it's a common verb or adjective
+            if concept.endswith(('ing', 'ed', 'ly', 'tion', 'ment', 'ness')):
+                # Only keep if it's a technical term (e.g., "indexing", "embedding")
+                if concept in ['indexing', 'embedding', 'processing', 'generation', 'retrieval']:
+                    domain_terms.append(concept)
+            else:
+                domain_terms.append(concept)
+        
+        # Return top 12 most relevant concepts (reduced from 15 for better precision)
+        return domain_terms[:12]
 
     def _evaluate_concept_coverage(
         self, content: str, key_concepts: List[str], feedback: List[str]
@@ -107,6 +169,10 @@ class ContentEvaluationAgent(EvaluationAgent):
             c for c in key_concepts
             if isinstance(c, str) and c.lower() in content_lower
         ]
+        missing_concepts = [
+            c for c in key_concepts
+            if isinstance(c, str) and c.lower() not in content_lower
+        ]
         coverage_percent = (len(covered_concepts) / len(key_concepts)) * 100 if key_concepts else 0
 
         if coverage_percent >= 80:
@@ -114,23 +180,25 @@ class ContentEvaluationAgent(EvaluationAgent):
             feedback.append(
                 f"✓ Excellent concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
+            if missing_concepts:
+                feedback.append(f"→ Missing: {', '.join(missing_concepts[:5])}")
         elif coverage_percent >= 60:
             score += 30
             feedback.append(
-                f"→ Good coverage ({len(covered_concepts)}/{len(key_concepts)} concepts). "
-                f"Missing: {', '.join(c for c in key_concepts[:3] if c.lower() not in content_lower)}"
+                f"→ Good coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
+            feedback.append(f"→ Missing: {', '.join(missing_concepts[:5])}")
         elif coverage_percent >= 40:
             score += 15
             feedback.append(
-                f"→ Partial coverage ({len(covered_concepts)}/{len(key_concepts)} concepts). "
-                "Add more required concepts to your content."
+                f"→ Partial coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
+            feedback.append(f"→ Missing key concepts: {', '.join(missing_concepts[:7])}")
         else:
             feedback.append(
-                f"❌ Low concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts). "
-                "Review and include all key concepts."
+                f"❌ Low concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
+            feedback.append(f"❌ Missing critical concepts: {', '.join(missing_concepts[:10])}")
 
         return min(score, 100)
 

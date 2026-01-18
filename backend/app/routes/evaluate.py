@@ -62,6 +62,19 @@ def evaluate(
     response = requests.post("http://localhost:8000/api/evaluate", files=files, data=data)
     ```
     """
+    # Validate file types
+    ALLOWED_EXTENSIONS = {".py", ".txt", ".pdf"}
+    for file in files:
+        ext = "." + file.filename.lower().split(".")[-1] if "." in file.filename else ""
+        if ext not in ALLOWED_EXTENSIONS:
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file type. Allowed: .py, .txt, .pdf"
+            )
+
+    # Content inspection is deferred to evaluation agents to avoid duplication.
+
     # Create temporary directory for submissions
     temp_dir = tempfile.mkdtemp(prefix="submissions_")
 

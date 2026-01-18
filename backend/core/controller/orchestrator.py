@@ -67,7 +67,7 @@ class Orchestrator:
             )
         elif assignment_type == "content":
             results = self._evaluate_content_submissions(
-                submissions, ideal_reference
+                submissions, ideal_reference, problem_statement
             )
         elif assignment_type == "mixed":
             results = self._evaluate_mixed_submissions(
@@ -127,6 +127,7 @@ class Orchestrator:
         self,
         submissions: Dict[str, str],
         ideal_reference: Optional[str] = None,
+        problem_statement: Optional[str] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """
         Evaluate content-only submissions.
@@ -134,6 +135,7 @@ class Orchestrator:
         Args:
             submissions: Dict of filename to content
             ideal_reference: Reference content for comparison
+            problem_statement: Problem description for concept extraction
 
         Returns:
             Results mapped to student names
@@ -150,6 +152,7 @@ class Orchestrator:
                 "student_content": content,
                 "rubric": {"weights": content_weights},
                 "ideal_reference": ideal_reference or "",
+                "problem_statement": problem_statement or "",  # NEW: for auto-extraction
             }
 
             # Evaluate with content agent
@@ -224,6 +227,7 @@ class Orchestrator:
                         "student_content": content,
                         "rubric": {"weights": content_weights},
                         "ideal_reference": ideal_reference or "",
+                        "problem_statement": problem_statement or "",  # NEW: for auto-extraction
                     }
                     content_output = self.content_agent.evaluate(agent_input)
                     agent_outputs.append(content_output)

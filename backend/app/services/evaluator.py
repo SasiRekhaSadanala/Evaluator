@@ -64,6 +64,12 @@ class EvaluatorService:
                 csv_detailed_output_path=csv_detailed_path,
             )
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"ERROR in EvaluatorService.evaluate:")
+            print(f"  Exception type: {type(e).__name__}")
+            print(f"  Exception message: {str(e)}")
+            print(f"  Traceback:\n{error_details}")
             return EvaluationResponse(
                 status="error",
                 message="Evaluation failed",

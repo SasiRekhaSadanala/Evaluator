@@ -130,7 +130,7 @@ class EvaluationResponse(BaseModel):
                 "message": "Evaluated 3 submissions successfully",
                 "results": [
                     {
-                        "submission_id": "John Doe",
+                        "submission_id": "john_doe_submission_Result",
                         "final_score": 92.5,
                         "max_score": 100,
                         "percentage": 92.5,

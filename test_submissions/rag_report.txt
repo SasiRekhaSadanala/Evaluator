@@ -1,0 +1,16 @@
+This document provides a comprehensive overview of the Offline AI-Powered RAG Knowledge Portal implementation.
+
+The system architecture consists of several key components. First, we implement document indexing using FAISS for efficient vector storage. The embeddings are generated using a local model to ensure complete offline functionality.
+
+The retriever-generator pipeline follows a standard RAG approach. Documents are chunked and embedded, then stored in the FAISS index. When a query arrives, we retrieve relevant chunks and pass them to the offline LLM for generation.
+
+For the offline LLM, we use Phi-3 Mini which provides good performance on CPU-only hardware. This ensures the system can run without GPU requirements, making it accessible for privacy-focused organizations.
+
+The implementation plan includes three phases:
+1. Document ingestion and indexing setup
+2. Retrieval system with FAISS integration  
+3. Generation pipeline with Phi-3 Mini
+
+Security and privacy are paramount. All data remains on-premises with no external API calls. The system is designed for organizations that require strict data isolation.
+
+Evaluation metrics will include retrieval accuracy, generation quality, and system latency. We'll benchmark against standard RAG datasets to ensure performance meets expectations.
