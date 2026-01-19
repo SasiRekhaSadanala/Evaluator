@@ -60,17 +60,24 @@ class CodeEvaluationAgent(EvaluationAgent):
         )
         scores["approach"] = approach_score
 
-        # Analyze readability
-        readability_score = self._evaluate_readability(student_code, feedback, language)
-        scores["readability"] = readability_score
+        # Hard Gate: If irrelevant, fail immediately
+        if approach_score == 0:
+            scores["readability"] = 0
+            scores["structure"] = 0
+            scores["effort"] = 0
+            feedback.append("⚠️ Irrelevant submission: Code does not address the problem. All scores set to 0.")
+        else:
+            # Analyze readability
+            readability_score = self._evaluate_readability(student_code, feedback, language)
+            scores["readability"] = readability_score
 
-        # Analyze structure
-        structure_score = self._evaluate_structure(student_code, feedback, language)
-        scores["structure"] = structure_score
+            # Analyze structure
+            structure_score = self._evaluate_structure(student_code, feedback, language)
+            scores["structure"] = structure_score
 
-        # Analyze visible effort
-        effort_score = self._evaluate_effort(student_code, feedback, language)
-        scores["effort"] = effort_score
+            # Analyze visible effort
+            effort_score = self._evaluate_effort(student_code, feedback, language)
+            scores["effort"] = effort_score
 
         # Calculate total score
         weights = rubric.get("weights", {
@@ -124,23 +131,13 @@ class CodeEvaluationAgent(EvaluationAgent):
         self, code: str, problem: str, feedback: List[str]
     ) -> float:
         """Evaluate Python code approach using AST."""
-        score = 50
+        score = 0
 
         try:
             tree = ast.parse(code)
         except SyntaxError:
             feedback.append("❌ Code has syntax errors. Review and fix them.")
             return 0
-
-        # Check for functions or classes (indicates problem-solving approach)
-        functions = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
-        classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
-
-        if functions or classes:
-            score += 30
-            feedback.append("✓ Code is organized with functions or classes.")
-        else:
-            feedback.append("→ Consider organizing code with functions or classes.")
 
         # Simple keyword matching for problem relevance
         problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
@@ -155,13 +152,24 @@ class CodeEvaluationAgent(EvaluationAgent):
         keyword_matches = len(covered_keywords)
 
         if keyword_matches > 0:
-            score += 20
+            score += 60
             msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
             if missing_keywords and not self.llm_service.enabled:
                 msg += f" Missing: {', '.join(missing_keywords[:3])}"
             feedback.append(msg)
         else:
-            feedback.append("→ Ensure your solution directly addresses the problem statement.")
+            feedback.append("❌ Code does not appear to address the problem statement.")
+            return 0  # Irrelevant submission
+
+        # Check for functions or classes (indicates problem-solving approach)
+        functions = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+        classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+
+        if functions or classes:
+            score += 40
+            feedback.append("✓ Code is organized with functions or classes.")
+        else:
+            feedback.append("→ Consider organizing code with functions or classes.")
 
         return min(score, 100)
     
@@ -169,7 +177,29 @@ class CodeEvaluationAgent(EvaluationAgent):
         self, code: str, problem: str, feedback: List[str]
     ) -> float:
         """Evaluate C++ code approach using regex patterns."""
-        score = 50
+        score = 0
+
+        # Simple keyword matching for problem relevance
+        problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
+        code_lower = code.lower()
+        
+        covered_keywords = [w for w in problem_keywords if w in code_lower]
+        missing_keywords = [w for w in problem_keywords if w not in code_lower]
+        
+        # Store for LLM use
+        self._last_missing_concepts = missing_keywords
+        
+        keyword_matches = len(covered_keywords)
+
+        if keyword_matches > 0:
+            score += 60
+            msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
+            if missing_keywords and not self.llm_service.enabled:
+                msg += f" Missing: {', '.join(missing_keywords[:3])}"
+            feedback.append(msg)
+        else:
+            feedback.append("❌ Code does not appear to address the problem statement.")
+            return 0  # Irrelevant submission
 
         # Check for functions (basic pattern)
         function_pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{'
@@ -192,38 +222,17 @@ class CodeEvaluationAgent(EvaluationAgent):
             score += 10
             feedback.append(f"✓ Code includes {len(includes)} header file(s).")
         
-        # Simple keyword matching for problem relevance
-        problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
-        code_lower = code.lower()
-        
-        covered_keywords = [w for w in problem_keywords if w in code_lower]
-        missing_keywords = [w for w in problem_keywords if w not in code_lower]
-        
-        # Store for LLM use
-        self._last_missing_concepts = missing_keywords
-        
-        keyword_matches = len(covered_keywords)
-
-        if keyword_matches > 0:
-            score += 10
-            msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
-            if missing_keywords and not self.llm_service.enabled:
-                msg += f" Missing: {', '.join(missing_keywords[:3])}"
-            feedback.append(msg)
-        else:
-            feedback.append("→ Ensure your solution directly addresses the problem statement.")
-
         return min(score, 100)
 
     def _evaluate_readability(self, code: str, feedback: List[str], language: str = "python") -> float:
         """Evaluate code readability."""
-        score = 50
+        score = 0
 
         lines = code.split("\n")
         long_lines = sum(1 for line in lines if len(line.strip()) > 100)
 
         if long_lines == 0:
-            score += 30
+            score += 60
             feedback.append("✓ Line length is appropriate for readability.")
         else:
             feedback.append(
@@ -240,7 +249,7 @@ class CodeEvaluationAgent(EvaluationAgent):
             comment_lines = single_line_comments + multi_line_comments
         
         if comment_lines > 0:
-            score += 20
+            score += 40
             feedback.append(f"✓ Code includes comments ({comment_lines} found).")
         else:
             feedback.append("→ Add comments to explain your logic.")
@@ -249,7 +258,7 @@ class CodeEvaluationAgent(EvaluationAgent):
 
     def _evaluate_structure(self, code: str, feedback: List[str], language: str = "python") -> float:
         """Evaluate code structure and organization."""
-        score = 50
+        score = 0
 
         if language == "python":
             try:
@@ -263,12 +272,11 @@ class CodeEvaluationAgent(EvaluationAgent):
 
             total_definitions = len(functions) + len(classes)
 
-            if total_definitions > 2:
-                score += 30
+            if total_definitions > 0:
+                score += 60
                 feedback.append(f"✓ Good modularization ({total_definitions} functions/classes).")
-            elif total_definitions > 0:
-                score += 15
-                feedback.append("→ Consider breaking code into more functions for reusability.")
+            else:
+                feedback.append("→ Consider breaking code into functions for reusability.")
 
             # Check for meaningful variable names (simple heuristic)
             assignments = [
@@ -276,7 +284,7 @@ class CodeEvaluationAgent(EvaluationAgent):
                 if isinstance(n, ast.Assign)
             ]
             if assignments:
-                score += 20
+                score += 40
                 feedback.append("✓ Code uses variable assignments (structured logic).")
         else:  # C++
             # Count functions and classes using regex
@@ -288,28 +296,22 @@ class CodeEvaluationAgent(EvaluationAgent):
             
             total_definitions = len(functions) + len(classes)
             
-            if total_definitions > 2:
-                score += 30
+            if total_definitions > 0:
+                score += 60
                 feedback.append(f"✓ Good modularization ({total_definitions} functions/classes).")
-            elif total_definitions > 0:
-                score += 15
-                feedback.append("→ Consider breaking code into more functions for reusability.")
+            else:
+                feedback.append("→ Consider breaking code into functions for reusability.")
             
-            # Check for namespace usage
-            if 'namespace' in code or 'std::' in code:
-                score += 10
-                feedback.append("✓ Code uses namespaces (good C++ practice).")
-            
-            # Check for header guards (in .h files)
-            if '#ifndef' in code and '#define' in code:
-                score += 10
-                feedback.append("✓ Header guards detected (good practice).")
+            # Check for namespace or header guards
+            if 'namespace' in code or 'std::' in code or ('#ifndef' in code and '#define' in code):
+                score += 40
+                feedback.append("✓ Code uses namespaces/guards (good C++ practice).")
 
         return min(score, 100)
 
     def _evaluate_effort(self, code: str, feedback: List[str], language: str = "python") -> float:
         """Evaluate visible effort and complexity."""
-        score = 50
+        score = 0
 
         lines = code.split("\n")
         # Filter out comments based on language
@@ -320,14 +322,12 @@ class CodeEvaluationAgent(EvaluationAgent):
         
         code_lines = len(non_empty_lines)
 
-        if code_lines > 10:
-            score += 30
+        if code_lines > 5:
+            score += 60
             feedback.append(f"✓ Substantial code submission ({code_lines} lines).")
-        elif code_lines > 5:
-            score += 15
+        elif code_lines > 0:
+            score += 30
             feedback.append("→ Your solution is brief. Consider adding more logic or cases.")
-        else:
-            feedback.append("→ Your solution is very minimal. Add more implementation.")
 
         # Count control flow statements
         if language == "python":
@@ -338,7 +338,7 @@ class CodeEvaluationAgent(EvaluationAgent):
                     if isinstance(n, (ast.If, ast.For, ast.While))
                 )
                 if control_flow > 0:
-                    score += 20
+                    score += 40
                     feedback.append(
                         f"✓ Code includes control flow ({control_flow} conditions/loops)."
                     )
