@@ -19,7 +19,7 @@ def read_file(file_path: str) -> Optional[str]:
         raise FileNotFoundError(f"File not found: {file_path}")
 
     # Check supported file types
-    supported_extensions = {".py", ".txt", ".pdf"}
+    supported_extensions = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt", ".pdf"}
     if path.suffix.lower() not in supported_extensions:
         return None
 
@@ -86,7 +86,8 @@ def read_submissions_by_type(folder_path: str) -> Dict[str, Dict[str, str]]:
         if file_path.is_file():
             content = read_file(str(file_path))
             if content is not None:
-                if file_path.suffix.lower() == ".py":
+                # C++ and Python files are code
+                if file_path.suffix.lower() in [".py", ".cpp", ".cc", ".cxx", ".h", ".hpp"]:
                     result["code"][file_path.name] = content
                 elif file_path.suffix.lower() in [".txt", ".pdf"]:
                     result["text"][file_path.name] = content

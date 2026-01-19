@@ -45,7 +45,7 @@ def evaluate(
     - **problem_statement**: Problem description for code assignments
     - **ideal_reference**: Reference content for content assignments
     - **rubric_json**: Custom rubric as JSON (optional, uses default if not provided)
-    - **files**: Student submission files (.py or .txt)
+    - **files**: Student submission files (.py, .cpp, .cc, .cxx, .h, .hpp, .txt, .pdf)
 
     Returns evaluation results with scores, feedback, and CSV export paths.
 
@@ -63,14 +63,14 @@ def evaluate(
     ```
     """
     # Validate file types
-    ALLOWED_EXTENSIONS = {".py", ".txt", ".pdf"}
+    ALLOWED_EXTENSIONS = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt", ".pdf"}
     for file in files:
         ext = "." + file.filename.lower().split(".")[-1] if "." in file.filename else ""
         if ext not in ALLOWED_EXTENSIONS:
             from fastapi import HTTPException
             raise HTTPException(
                 status_code=400,
-                detail="Unsupported file type. Allowed: .py, .txt, .pdf"
+                detail="Unsupported file type. Allowed: .py, .cpp, .cc, .cxx, .h, .hpp, .txt, .pdf"
             )
 
     # Content inspection is deferred to evaluation agents to avoid duplication.

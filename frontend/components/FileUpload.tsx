@@ -53,7 +53,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
     if (!selectedFiles) return
 
     const newFiles: File[] = []
-    const allowedExtensions = ['.py', '.txt', '.pdf']
+    const allowedExtensions = ['.py', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.txt', '.pdf']
 
     Array.from(selectedFiles).forEach((file) => {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
@@ -189,7 +189,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                   type="file"
                   onChange={(e) => handleFileSelect(e.target.files)}
                   multiple
-                  accept=".py,.txt,.pdf"
+                  accept=".py,.cpp,.cc,.cxx,.h,.hpp,.txt,.pdf"
                   className="hidden"
                 />
 
@@ -205,7 +205,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                   {dragActive ? 'Drop files now' : 'Click or Drag files'}
                 </h3>
                 <p className="text-sm text-slate-400 max-w-xs mx-auto">
-                  Upload Python (.py), Text (.txt), or PDF (.pdf) files to begin evaluation
+                  Upload Python (.py), C++ (.cpp, .cc, .cxx, .h, .hpp), Text (.txt), or PDF (.pdf) files to begin evaluation
                 </p>
               </div>
 
@@ -223,7 +223,9 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
                             <span className="text-lg">
-                              {file.name.endsWith('.py') ? '🐍' : file.name.endsWith('.pdf') ? '📕' : '📄'}
+                              {file.name.endsWith('.py') ? '🐍' :
+                                file.name.match(/\.(cpp|cc|cxx|h|hpp)$/i) ? '⚙️' :
+                                  file.name.endsWith('.pdf') ? '📕' : '📄'}
                             </span>
                           </div>
                           <div className="min-w-0">
@@ -280,7 +282,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                 </div>
               </div>
               <p className="text-xs text-slate-400">
-                {assignmentType === 'code' && "Best for evaluating logic, structure, and syntax in Python scripts."}
+                {assignmentType === 'code' && "Best for evaluating logic, structure, and syntax in Python/C++ code."}
                 {assignmentType === 'content' && "Ideal for analyzing text quality, concepts, and structure in PDF/TXT."}
                 {assignmentType === 'mixed' && "Use both code and content analysis for comprehensive evaluation."}
               </p>

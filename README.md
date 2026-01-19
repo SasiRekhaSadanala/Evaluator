@@ -4,7 +4,7 @@ An intelligent submission evaluation system for student assignments with a moder
 
 ## Overview
 
-A full-stack application that evaluates student code and content submissions using multi-agent analysis. Features a **FastAPI** backend with **Next.js** frontend, optional **Google Gemini LLM** integration for semantic feedback, and comprehensive evaluation metrics.
+A full-stack application that evaluates student code and content submissions using multi-agent analysis. Features a **FastAPI** backend with **Next.js** frontend, optional **Google Gemini LLM** integration for semantic feedback, and comprehensive evaluation metrics. Supports **Python** and **C++** code evaluation.
 
 ## Architecture
 
@@ -16,12 +16,12 @@ A full-stack application that evaluates student code and content submissions usi
 
 ### Frontend (Next.js 14)
 - **Modern UI**: React-based interface with Tailwind CSS
-- **File Upload**: Support for `.py`, `.txt`, and `.pdf` files
+- **File Upload**: Support for `.py`, `.cpp`, `.cc`, `.cxx`, `.h`, `.hpp`, `.txt`, and `.pdf` files
 - **Real-time Results**: Instant evaluation feedback display
 - **Responsive Design**: Mobile-friendly interface
 
 ### Evaluation Agents
-1. **CodeEvaluationAgent** - AST analysis for Python code
+1. **CodeEvaluationAgent** - Multi-language code analysis (Python AST, C++ regex)
 2. **ContentEvaluationAgent** - Keyword and structure analysis for text
 3. **AggregatorAgent** - Score normalization and feedback consolidation
 4. **LLM Service** (Optional) - Semantic feedback enhancement via Google Gemini
@@ -127,10 +127,10 @@ Evaluator/
 ## Features
 
 ### Code Evaluation
-- **AST Analysis**: Syntactic code structure parsing
+- **Multi-Language Support**: Python (AST-based) and C++ (regex-based) analysis
 - **Approach Relevance**: Function and keyword matching
-- **Readability**: Line length, comments, naming conventions
-- **Structure**: Modularization, variable usage
+- **Readability**: Line length, comments (# for Python, // and /* */ for C++), naming conventions
+- **Structure**: Modularization, variable usage, namespaces (C++), header guards (C++)
 - **Effort Metrics**: Code volume, control flow complexity
 
 ### Content Evaluation

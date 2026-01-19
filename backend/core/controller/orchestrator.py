@@ -103,6 +103,7 @@ class Orchestrator:
                 "problem_statement": problem_statement or "",
                 "rubric": {"weights": code_weights},
                 "student_code": code,
+                "filename": filename,  # Add filename for language detection
             }
 
             # Evaluate with code agent
@@ -213,6 +214,7 @@ class Orchestrator:
                         "problem_statement": problem_statement or "",
                         "rubric": {"weights": code_weights},
                         "student_code": code,
+                        "filename": filename,  # Add filename for language detection
                     }
                     code_output = self.code_agent.evaluate(agent_input)
                     agent_outputs.append(code_output)
