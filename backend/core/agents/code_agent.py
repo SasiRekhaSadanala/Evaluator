@@ -2,10 +2,15 @@ import ast
 from typing import Any, Dict, List
 
 from .base_agent import EvaluationAgent
+from utils.llm_service import LLMService
 
 
 class CodeEvaluationAgent(EvaluationAgent):
     """Evaluates student code submissions through static analysis."""
+
+    def __init__(self):
+        super().__init__()
+        self.llm_service = LLMService()
 
     def evaluate(self, input_data: Any) -> Dict[str, Any]:
         """
@@ -59,6 +64,26 @@ class CodeEvaluationAgent(EvaluationAgent):
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
         max_score = sum(weights.values()) * 100  # Assume each category is out of 100
 
+        # Integrate LLM Feedback (Step 2, 4, 5)
+        if self.llm_service.enabled:
+            # Collect missing concepts for semantic explanation (Step 4)
+            missing_concepts = getattr(self, "_last_missing_concepts", [])
+            
+            # Collect deterministic findings for context
+            findings = [f for f in feedback if f.startswith("✓") or f.startswith("→") or f.startswith("❌")]
+            
+            llm_feedback = self.llm_service.generate_semantic_feedback(
+                context_type="code",
+                submission_content=student_code,
+                rubric_context=str(rubric),
+                deterministic_findings=findings,
+                missing_concepts=missing_concepts
+            )
+            
+            if llm_feedback:
+                feedback.append("LLM Explanation:")  # Step 5
+                feedback.extend(llm_feedback)
+
         return {
             "score": round(total_score, 2),
             "max_score": max_score,
@@ -88,16 +113,23 @@ class CodeEvaluationAgent(EvaluationAgent):
             feedback.append("→ Consider organizing code with functions or classes.")
 
         # Simple keyword matching for problem relevance
-        problem_keywords = problem.lower().split()
+        problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
         code_lower = code.lower()
-        keyword_matches = sum(
-            1 for keyword in problem_keywords
-            if len(keyword) > 3 and keyword in code_lower
-        )
+        
+        covered_keywords = [w for w in problem_keywords if w in code_lower]
+        missing_keywords = [w for w in problem_keywords if w not in code_lower]
+        
+        # Store for LLM use
+        self._last_missing_concepts = missing_keywords
+        
+        keyword_matches = len(covered_keywords)
 
         if keyword_matches > 0:
             score += 20
-            feedback.append(f"✓ Code addresses problem concepts ({keyword_matches} matches).")
+            msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
+            if missing_keywords and not self.llm_service.enabled:
+                msg += f" Missing: {', '.join(missing_keywords[:3])}"
+            feedback.append(msg)
         else:
             feedback.append("→ Ensure your solution directly addresses the problem statement.")
 

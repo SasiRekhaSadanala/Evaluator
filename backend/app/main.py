@@ -5,8 +5,17 @@ Instructor-only REST API for evaluating student submissions.
 No authentication, no database.
 """
 
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load environment variables
+load_dotenv()
+
+# Step 1: ENV Confirmation
+LLM_ENABLED = os.getenv("LLM_ENABLED", "false").lower() == "true"
+print(f"LLM_ENABLED = {LLM_ENABLED}")
 
 from backend.app.routes import evaluate_router
 
@@ -59,4 +68,4 @@ app.include_router(evaluate_router)
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

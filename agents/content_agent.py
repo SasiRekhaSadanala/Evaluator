@@ -2,10 +2,15 @@ import re
 from typing import Any, Dict, List
 
 from .base_agent import EvaluationAgent
+from utils.llm_service import LLMService
 
 
 class ContentEvaluationAgent(EvaluationAgent):
     """Evaluates student content (PPT text, summaries) through structural analysis."""
+
+    def __init__(self):
+        super().__init__()
+        self.llm_service = LLMService()
 
     def evaluate(self, input_data: Any) -> Dict[str, Any]:
         """
@@ -64,6 +69,26 @@ class ContentEvaluationAgent(EvaluationAgent):
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
         max_score = sum(weights.values()) * 100
 
+        # Integrate LLM Feedback (Step 2, 4, 5)
+        if self.llm_service.enabled:
+            # Collect missing concepts for semantic explanation (Step 4)
+            missing_concepts = getattr(self, "_last_missing_concepts", [])
+            
+            # Collect deterministic findings for context
+            findings = [f for f in feedback if f.startswith("✓") or f.startswith("→")]
+            
+            llm_feedback = self.llm_service.generate_semantic_feedback(
+                context_type="content",
+                submission_content=student_content,
+                rubric_context=str(rubric),
+                deterministic_findings=findings,
+                missing_concepts=missing_concepts
+            )
+            
+            if llm_feedback:
+                feedback.append("LLM Explanation:")  # Step 5
+                feedback.extend(llm_feedback)
+        
         return {
             "score": round(total_score, 2),
             "max_score": max_score,
@@ -107,6 +132,14 @@ class ContentEvaluationAgent(EvaluationAgent):
             c for c in key_concepts
             if isinstance(c, str) and c.lower() in content_lower
         ]
+        missing_concepts = [
+            c for c in key_concepts
+            if isinstance(c, str) and c.lower() not in content_lower
+        ]
+        
+        # Store for LLM use
+        self._last_missing_concepts = missing_concepts
+        
         coverage_percent = (len(covered_concepts) / len(key_concepts)) * 100 if key_concepts else 0
 
         if coverage_percent >= 80:
@@ -116,10 +149,11 @@ class ContentEvaluationAgent(EvaluationAgent):
             )
         elif coverage_percent >= 60:
             score += 30
-            feedback.append(
-                f"→ Good coverage ({len(covered_concepts)}/{len(key_concepts)} concepts). "
-                f"Missing: {', '.join(c for c in key_concepts[:3] if c.lower() not in content_lower)}"
-            )
+            msg = f"→ Good coverage ({len(covered_concepts)}/{len(key_concepts)} concepts). "
+            # Step 4: No raw keywords if LLM is enabled
+            if not self.llm_service.enabled:
+                msg += f"Missing: {', '.join(missing_concepts[:3])}"
+            feedback.append(msg)
         elif coverage_percent >= 40:
             score += 15
             feedback.append(

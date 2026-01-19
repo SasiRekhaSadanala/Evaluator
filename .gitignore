@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.venv/
+.env
+
+# Logs and Temp
+*.log
+backend_err.txt
+debug_verify.txt
+debug_output.txt
+debug_startup.txt
+nuke_output.txt
+final_debug.txt
+final_startup.txt
+test_out.txt
+capture_output.txt
+dep_check.txt
+git_status.txt
+git_diag.txt
+main_debug.txt
+startup_debug.txt
+active_ports.txt
+agent_test_output.txt
+
+# Debug Scripts
+capture_debug.py
+capture_nuke.py
+check_deps.py
+debug_*.py
+final_test.py
+git_diag.py
+kill_frontend.py
+kill_port.py
+main_debug.py
+list_models.py
+verify_*.py
+test_llm_equivalence.py
+test_strict_feedback.py
+
+# Node/Frontend
+node_modules/
+.next/
+frontend/.next/
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

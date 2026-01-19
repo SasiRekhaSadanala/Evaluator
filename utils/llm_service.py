@@ -1,0 +1,133 @@
+import os
+import google.generativeai as genai
+from typing import List, Optional
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+class LLMService:
+    """
+    Service wrapper for Google's Gemini LLM.
+    Role: Semantic Assistant ONLY. Does not assign scores.
+    """
+
+    def __init__(self):
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.enabled = os.getenv("LLM_ENABLED", "false").lower() == "true"
+        self.model_name = os.getenv("LLM_MODEL", "gemini-1.5-flash")
+        self._client = None
+        self._setup_done = False
+
+    def _ensure_setup(self):
+        """Lazy initialization of the Gemini client."""
+        if self._setup_done or not self.enabled:
+            return
+
+        if not self.api_key:
+            print("WARNING: LLM_ENABLED is true but GEMINI_API_KEY is missing. Disabling LLM.")
+            self.enabled = False
+            return
+
+        try:
+            genai.configure(api_key=self.api_key)
+            # Use a default model first, can be overridden during generation
+            self._client = genai.GenerativeModel(self.model_name)
+            self._setup_done = True
+        except Exception as e:
+            print(f"WARNING: Failed to initialize Gemini: {e}. Disabling LLM.")
+            self.enabled = False
+            self._setup_done = True
+
+    def generate_semantic_feedback(
+        self, 
+        context_type: str, 
+        submission_content: str, 
+        rubric_context: str, 
+        deterministic_findings: List[str],
+        missing_concepts: List[str] = None
+    ) -> List[str]:
+        """
+        Generate qualitative feedback based on deterministic findings.
+        
+        Args:
+            context_type: "code" or "content"
+            submission_content: The student's code or text.
+            rubric_context: Relevant parts of the rubric.
+            deterministic_findings: List of strings like "Found 3 functions".
+            missing_concepts: List of missing keywords to be explained semantically.
+
+        Returns:
+            List of feedback strings. Returns empty list on failure or if disabled.
+        """
+        if not self.enabled:
+            return []
+
+        self._ensure_setup()
+        
+        # Try a few common model identifiers to avoid 404s/Quotas
+        models_to_try = [self.model_name, "gemini-1.5-flash", "gemini-flash-latest", "gemini-pro"]
+        # Remove duplicates while preserving order
+        models_to_try = list(dict.fromkeys(m for m in models_to_try if m))
+        
+        last_error = ""
+        for model in models_to_try:
+            try:
+                client = genai.GenerativeModel(model)
+                prompt = self._build_prompt(context_type, submission_content, rubric_context, deterministic_findings, missing_concepts)
+                response = client.generate_content(prompt)
+                
+                if response.text:
+                    # Parse bullet points from response
+                    lines = [line.strip() for line in response.text.split("\n") if line.strip()]
+                    return lines if lines else [response.text.strip()]
+                
+                continue
+
+            except Exception as e:
+                last_error = str(e)
+                continue
+                
+        print(f"WARNING: All LLM models failed. Last error: {last_error}. Falling back to rule-based feedback.")
+        return []
+
+    def _build_prompt(
+        self, 
+        context_type: str, 
+        submission: str, 
+        rubric: str, 
+        findings: List[str],
+        missing: List[str] = None
+    ) -> str:
+        findings_str = "\n".join(f"- {f}" for f in findings)
+        missing_str = ", ".join(missing) if missing else "None"
+        
+        base_prompt = f"""
+You are a helpful Teaching Assistant explaining evaluation results.
+Your goal is to explain the following evaluation results and findings to a student.
+DO NOT assign a score. The score has already been determined by the system.
+DO NOT change weights or grading criteria.
+DO NOT invent new criteria. Focus ONLY on the provided context.
+Only explain based on provided facts and findings.
+
+Context: {context_type.upper()} Assignment
+Rubric/Criteria used:
+{rubric}
+
+Automated Findings (Facts that determine the score):
+{findings_str}
+
+Missing Concepts (Keywords to explain):
+{missing_str}
+
+Student Submission (for context):
+{submission[:4000]}
+
+MANDATORY INSTRUCTIONS:
+1. Explain logically WHY the findings above (e.g. "missing concepts") lead to the evaluation result.
+2. Rewrite missing concepts as a semantic explanation. Do NOT list keywords.
+3. Suggest improvements for the NEXT revision using specific examples from the code/content.
+4. Keep feedback encouraging, technical (for code) or structural (for content), and specific.
+5. Output specific, actionable bullet points.
+"""
+        return base_prompt

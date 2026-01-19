@@ -2,10 +2,15 @@ import ast
 from typing import Any, Dict, List
 
 from .base_agent import EvaluationAgent
+from utils.llm_service import LLMService
 
 
 class CodeEvaluationAgent(EvaluationAgent):
     """Evaluates student code submissions through static analysis."""
+
+    def __init__(self):
+        super().__init__()
+        self.llm_service = LLMService()
 
     def evaluate(self, input_data: Any) -> Dict[str, Any]:
         """
@@ -58,6 +63,22 @@ class CodeEvaluationAgent(EvaluationAgent):
 
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
         max_score = sum(weights.values()) * 100  # Assume each category is out of 100
+
+        # Integrate LLM Feedback (Append-Only)
+        if self.llm_service.enabled:
+            # Collect deterministic findings for context
+            findings = [f for f in feedback if f.startswith("✓") or f.startswith("→")]
+            
+            llm_feedback = self.llm_service.generate_semantic_feedback(
+                "code",
+                student_code,
+                str(rubric),
+                findings
+            )
+            
+            if llm_feedback:
+                feedback.append("## AI Tutor Insights")
+                feedback.extend(llm_feedback)
 
         return {
             "score": round(total_score, 2),
@@ -194,3 +215,6 @@ class CodeEvaluationAgent(EvaluationAgent):
             pass
 
         return min(score, 100)
+
+    # ... existing methods ...
+

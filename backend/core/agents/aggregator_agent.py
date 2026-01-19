@@ -128,12 +128,37 @@ class AggregatorAgent(EvaluationAgent):
         # Organize by type: strengths (✓), improvements (→), issues (❌)
         strengths = [f for f in unique_feedback if f.startswith("✓")]
         improvements = [f for f in unique_feedback if f.startswith("→")]
-        issues = [f for f in unique_feedback if f.startswith("❌")]
-        neutral = [f for f in unique_feedback if not any(f.startswith(s) for s in ["✓", "→", "❌", "ℹ"])]
-        info = [f for f in unique_feedback if f.startswith("ℹ")]
+        issues = [f for f in unique_feedback if f.startswith("❌") or f.startswith("[x]")]
+        llm_explanations = []
+        is_llm_section = False
+        
+        # Extract LLM explanations while preserving their internal structure
+        final_unique_feedback = []
+        for f in unique_feedback:
+            if "LLM Explanation:" in f:
+                is_llm_section = True
+                continue
+            
+            if is_llm_section:
+                # If we hit a new section marker, we stop the LLM section
+                if any(f.startswith(s) for s in ["✓", "→", "❌", "ℹ", "##", "[", "√"]):
+                    is_llm_section = False
+                else:
+                    llm_explanations.append(f)
+                    continue
+            
+            final_unique_feedback.append(f)
 
-        # Organize: strengths first, then improvements, then issues
+        neutral = [f for f in final_unique_feedback if not any(f.startswith(s) for s in ["✓", "→", "❌", "ℹ", "##", "["])]
+        info = [f for f in final_unique_feedback if f.startswith("ℹ")]
+
+        # Organize: AI Insights first (priority semantic feedback), then standard categories
         organized = []
+        if llm_explanations:
+            organized.append("## AI Insights")
+            organized.extend(llm_explanations)
+            organized.append("") # Spacer
+            
         if strengths:
             organized.append("## Strengths")
             organized.extend(strengths)
