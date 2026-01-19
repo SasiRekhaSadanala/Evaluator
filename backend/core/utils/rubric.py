@@ -14,10 +14,10 @@ class Rubric:
                 "weight": 0.6,
                 "max_score": 100,
                 "criteria": {
-                    "approach": {"weight": 0.4, "max_score": 100},
-                    "readability": {"weight": 0.2, "max_score": 100},
-                    "structure": {"weight": 0.2, "max_score": 100},
-                    "effort": {"weight": 0.2, "max_score": 100},
+                    "approach": {"weight": 0.5, "max_score": 100},
+                    "effort": {"weight": 0.3, "max_score": 100},
+                    "structure": {"weight": 0.1, "max_score": 100},
+                    "readability": {"weight": 0.1, "max_score": 100},
                 },
             },
             "content": {
