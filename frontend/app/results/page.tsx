@@ -248,15 +248,7 @@ export default function ResultsPage() {
               📥 Download Summary CSV
             </a>
           )}
-          {apiResponse?.csv_detailed_output_path && (
-            <a
-              href={apiResponse.csv_detailed_output_path}
-              download
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-lg transition-all hover:shadow-lg hover:shadow-green-500/30"
-            >
-              📥 Download Detailed CSV
-            </a>
-          )}
+          {/* Detailed CSV button removed per user request */}
         </div>
       </div>
     </main>

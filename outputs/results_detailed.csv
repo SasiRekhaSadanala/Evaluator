@@ -2,15 +2,9 @@ submission_id,final_score,max_score,feedback,assignment_type,file
 23BDS049_Result,0.0,100,## Issues to Address,content,23BDS049.pdf
 23BDS049_Result,0.0,100,❌ Very low concept coverage (0/12 concepts).,content,23BDS049.pdf
 23BDS049_Result,0.0,100,⚠️ Irrelevant submission: No key concepts from the prompt were found.,content,23BDS049.pdf
-5c_Result,22.0,100,## Strengths,content,5c.txt
-5c_Result,22.0,100,✓ Excellent concept coverage (12/12 concepts).,content,5c.txt
-5c_Result,22.0,100,✓ Well-organized (17 distinct sections).,content,5c.txt
-5c_Result,22.0,100,✓ Sentence structure is clear and varied.,content,5c.txt
-5c_Result,22.0,100,✓ Includes reasoning or evidence.,content,5c.txt
-5c_Result,22.0,100,## Areas for Improvement,content,5c.txt
-5c_Result,22.0,100,→ Content is brief (127 words). Expand with examples and explanations.,content,5c.txt
-5c_Result,22.0,100,→ Add concrete examples to support your concepts.,content,5c.txt
-5c_Result,22.0,100,⚠️ Content is too similar to the problem statement (80% match). Score penalized.,content,5c.txt
+5c_Result,0.0,100,## Issues to Address,content,5c.txt
+5c_Result,0.0,100,❌ Very low concept coverage (0/12 concepts).,content,5c.txt
+5c_Result,0.0,100,⚠️ Irrelevant submission: No key concepts from the prompt were found.,content,5c.txt
 mempal_Result,60.37,100,## Strengths,content,mempal.pdf
 mempal_Result,60.37,100,✓ Well-organized (468 distinct sections).,content,mempal.pdf
 mempal_Result,60.37,100,✓ Sentence structure is clear and varied.,content,mempal.pdf
@@ -19,16 +13,4 @@ mempal_Result,60.37,100,✓ Substantial content (3016 words).,content,mempal.pdf
 mempal_Result,60.37,100,✓ Includes examples or specific details.,content,mempal.pdf
 mempal_Result,60.37,100,✓ Includes reasoning or evidence.,content,mempal.pdf
 mempal_Result,60.37,100,## Areas for Improvement,content,mempal.pdf
-mempal_Result,60.37,100,→ Partial coverage (7/12 concepts).,content,mempal.pdf
-Report_Result,68.0,100,## Strengths,content,Report.pdf
-Report_Result,68.0,100,✓ Well-organized (555 distinct sections).,content,Report.pdf
-Report_Result,68.0,100,✓ Sentence structure is clear and varied.,content,Report.pdf
-Report_Result,68.0,100,✓ Substantial content (555 words).,content,Report.pdf
-Report_Result,68.0,100,✓ Includes reasoning or evidence.,content,Report.pdf
-Report_Result,68.0,100,## Areas for Improvement,content,Report.pdf
-Report_Result,68.0,100,→ Good coverage (9/12 concepts).,content,Report.pdf
-Report_Result,68.0,100,→ Add more transition words to improve flow between ideas.,content,Report.pdf
-Report_Result,68.0,100,→ Add concrete examples to support your concepts.,content,Report.pdf
-Sasi Rekha  - Internship Letter_Result,0.0,100,## Issues to Address,content,Sasi Rekha  - Internship Letter.pdf
-Sasi Rekha  - Internship Letter_Result,0.0,100,❌ Very low concept coverage (1/12 concepts).,content,Sasi Rekha  - Internship Letter.pdf
-Sasi Rekha  - Internship Letter_Result,0.0,100,⚠️ Irrelevant submission: No key concepts from the prompt were found.,content,Sasi Rekha  - Internship Letter.pdf
+mempal_Result,60.37,100,→ Partial coverage (5/12 concepts).,content,mempal.pdf

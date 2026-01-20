@@ -6,12 +6,26 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 
 from backend.app.schemas import EvaluationRequest, EvaluationResponse, RubricConfig
 from backend.app.services import EvaluatorService
 
 router = APIRouter(prefix="/api", tags=["evaluation"])
+
+@router.get("/download/{filename}")
+def download_csv(filename: str):
+    """Download exported CSV file."""
+    # Ensure filename is safe (basic check)
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(400, "Invalid filename")
+    
+    file_path = Path("outputs") / filename
+    if not file_path.exists():
+        raise HTTPException(404, "File not found")
+        
+    return FileResponse(file_path, media_type="text/csv", filename=filename)
 
 
 @router.post("/evaluate", response_model=EvaluationResponse)
@@ -107,6 +121,20 @@ def evaluate(
         # Evaluate via service layer
         service = EvaluatorService()
         response = service.evaluate(request)
+
+        # Convert local file paths to download URLs
+        # Assuming frontend is on same host/port for relative links, or construct full URL
+        # For simplicity, we'll return full URLs assuming localhost:8000 for now, 
+        # but in prod this should be dynamic.
+        base_url = "http://localhost:8000/api/download"
+        
+        if response.csv_output_path:
+            filename = Path(response.csv_output_path).name
+            response.csv_output_path = f"{base_url}/{filename}"
+            
+        if response.csv_detailed_output_path:
+            filename = Path(response.csv_detailed_output_path).name
+            response.csv_detailed_output_path = f"{base_url}/{filename}"
 
         return response
 
