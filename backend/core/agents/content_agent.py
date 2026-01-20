@@ -1,5 +1,6 @@
 import re
 from typing import Any, Dict, List
+import difflib
 
 from .base_agent import EvaluationAgent
 from utils.llm_service import LLMService
@@ -40,10 +41,58 @@ class ContentEvaluationAgent(EvaluationAgent):
         # Extract key concepts from rubric, reference, or problem statement
         key_concepts = self._extract_key_concepts(rubric, ideal_reference, problem_statement)
 
+        # Step 0: LLM-based Relevance Check (Primary Gate)
+        if self.llm_service.enabled:
+            verdict = self.llm_service.check_relevance(problem_statement, student_content, "content")
+            
+            # Handle verdicts strictly
+            if verdict == "IRRELEVANT":
+                feedback.append("⚠️ LLM determined content is irrelevant to the prompt. Score: 0.")
+                return {
+                    "score": 0,
+                    "max_score": 100,
+                    "feedback": feedback
+                }
+            elif verdict == "UNCERTAIN":
+                # feedback.append("⚠️ LLM could not determine relevance. Treating as irrelevant for safety. Score: 0.")
+                pass
+                # Continue with evaluation using keyword fallback
+            elif verdict == "PARTIAL":
+                feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
+                # Continue with evaluation but note the partial status
+            elif verdict == "RELEVANT":
+                feedback.append("✓ LLM verified content is relevant to the prompt.")
+                # Continue with full evaluation
+
+
+        # Heuristic: Check for prompt copying (plagiarism of question)
+        # If strict LLM relevance failed (UNCERTAIN) or is disabled, we must ensure 
+        # the student didn't just copy the prompt to cheat keyword detection.
+        if problem_statement and len(student_content) > 0:
+            similarity = difflib.SequenceMatcher(None, problem_statement, student_content).ratio()
+            # If > 60% similarity, likely just the prompt
+            if similarity > 0.6:
+                feedback.append(f"⚠️ Content is too similar to the problem statement ({int(similarity*100)}% match). Score penalized.")
+                is_plagiarism = True
+            else:
+                is_plagiarism = False
+        else:
+            is_plagiarism = False
+        
         # Analyze concept coverage
         coverage_score = self._evaluate_concept_coverage(
             student_content, key_concepts, feedback
         )
+        
+        # Fallback Gate: If LLM is disabled or uncertain, and coverage is zero, fail
+        if coverage_score == 0:
+            feedback.append("⚠️ Irrelevant submission: No key concepts from the prompt were found.")
+            return {
+                "score": 0,
+                "max_score": 100,
+                "feedback": feedback
+            }
+
         scores["coverage"] = coverage_score
 
         # Analyze alignment with requirements
@@ -69,6 +118,11 @@ class ContentEvaluationAgent(EvaluationAgent):
         }
 
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
+        
+        # Cap score if plagiarism detected
+        if is_plagiarism:
+             total_score = min(total_score, 20)
+             
         max_score = sum(weights.values()) * 100
 
         # Integrate LLM Feedback (Step 2, 4, 5)
@@ -183,7 +237,7 @@ class ContentEvaluationAgent(EvaluationAgent):
         self, content: str, key_concepts: List[str], feedback: List[str]
     ) -> float:
         """Evaluate coverage of key concepts."""
-        score = 40
+        score = 0
 
         if not key_concepts:
             feedback.append("ℹ No key concepts specified for comparison.")
@@ -205,29 +259,33 @@ class ContentEvaluationAgent(EvaluationAgent):
         coverage_percent = (len(covered_concepts) / len(key_concepts)) * 100 if key_concepts else 0
 
         if coverage_percent >= 80:
-            score += 50
+            score = 90
             feedback.append(
                 f"✓ Excellent concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
             if missing_concepts and not self.llm_service.enabled:
                 feedback.append(f"→ Missing: {', '.join(missing_concepts[:5])}")
         elif coverage_percent >= 60:
-            score += 30
+            score = 70
             feedback.append(
                 f"→ Good coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
             if not self.llm_service.enabled:
                 feedback.append(f"→ Missing: {', '.join(missing_concepts[:5])}")
         elif coverage_percent >= 40:
-            score += 15
+            score = 50
             feedback.append(
                 f"→ Partial coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
             if not self.llm_service.enabled:
                 feedback.append(f"→ Missing key concepts: {', '.join(missing_concepts[:7])}")
+        elif coverage_percent >= 20:
+             score = 20
+             feedback.append(f"→ Low coverage ({len(covered_concepts)}/{len(key_concepts)} concepts).")
         else:
+            score = 0
             feedback.append(
-                f"❌ Low concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
+                f"❌ Very low concept coverage ({len(covered_concepts)}/{len(key_concepts)} concepts)."
             )
             if not self.llm_service.enabled:
                 feedback.append(f"❌ Missing critical concepts: {', '.join(missing_concepts[:10])}")

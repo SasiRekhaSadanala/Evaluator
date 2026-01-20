@@ -124,10 +124,107 @@ Student Submission (for context):
 {submission[:4000]}
 
 MANDATORY INSTRUCTIONS:
-1. Explain logically WHY the findings above (e.g. "missing concepts") lead to the evaluation result.
-2. Rewrite missing concepts as a semantic explanation. Do NOT list keywords.
-3. Suggest improvements for the NEXT revision using specific examples from the code/content.
-4. Keep feedback encouraging, technical (for code) or structural (for content), and specific.
-5. Output specific, actionable bullet points.
+1. Format your response into these exact sections:
+    **Summary**: [Brief 1-sentence explanation of what the code/content is trying to do]
+    
+    **Corrections Needed**: [A detailed 5-line paragraph explaining conceptual gaps or missing elements]
+    
+    **Strengths**: [1-3 concise lines highlighting what was done well]
+
+2. Explain logically WHY the findings lead to the evaluation result.
+3. Rewrite missing concepts as a semantic explanation.
+4. Keep feedback encouraging but technical.
+5. Start directly with the content (no "Here is...").
+6. Do NOT use headers like "##". Use bold keys like "**Summary**:".
+
 """
         return base_prompt
+
+    def check_relevance(
+        self,
+        problem_statement: str,
+        submission_content: str,
+        context_type: str = "code"
+    ) -> str:
+        """
+        Ask LLM if the submission is relevant to the problem.
+
+        Args:
+            problem_statement: The task description.
+            submission_content: Student's code or text.
+            context_type: "code" or "content".
+
+        Returns:
+            "RELEVANT" if submission genuinely attempts to solve the problem.
+            "PARTIAL" if submission shows some understanding but incomplete/off-track.
+            "IRRELEVANT" if completely unrelated or wrong problem.
+            "UNCERTAIN" if LLM failed or disabled (fail-closed for safety).
+        """
+        if not self.enabled:
+            return "UNCERTAIN"
+
+        self._ensure_setup()
+        
+        prompt = f"""
+You are an expert evaluator for an automated grading system.
+Your task is to determine if the {context_type} submission GENUINELY ATTEMPTS to solve the specific problem described.
+
+Problem Statement:
+{problem_statement[:1500]}
+
+Submission:
+{submission_content[:3000]}
+
+CRITICAL EVALUATION RULES:
+1. **Identify the Core Logic Requirement**: What is the unique algorithmic or conceptual task? (e.g., "Implement a Trie", "Calculate GCD", "Summarize Photosynthesis").
+2. **Identify the Submission's Actual Logic**: What does this code/text actually do?
+3. **Ignore Superficial Similarities**: DO NOT be fooled by:
+    - Common programming terms (`int`, `vector`, `List`, `return`).
+    - Standard boilerplate templates.
+    - Matching words that are used in a different context.
+4. **Verdicts**:
+    - **IRRELEVANT**: If the submission is for a different problem, is just boilerplate, or contains no logic related to the core task.
+    - **PARTIAL**: If the submission shows some understanding of the problem domain but is incomplete, significantly off-track, or only addresses a small part.
+    - **RELEVANT**: If the submission shows a clear attempt to solve the specific problem, even if it has bugs or is unfinished.
+    - **UNCERTAIN**: Only if you genuinely cannot determine relevance from the provided information.
+
+Response Format:
+Reasoning: [1-2 sentences explaining the core logic mismatch or match]
+Verdict: [RELEVANT/PARTIAL/IRRELEVANT/UNCERTAIN]
+"""
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                # Use the configured model
+                client = genai.GenerativeModel(self.model_name or "gemini-pro")
+                response = client.generate_content(prompt)
+                
+                if not response.text:
+                    continue
+                    
+                text = response.text.strip().upper()
+                
+                # Parse verdict with priority on the "Verdict: " prefix
+                if "VERDICT: RELEVANT" in text or "VERDICT:RELEVANT" in text:
+                    return "RELEVANT"
+                if "VERDICT: PARTIAL" in text or "VERDICT:PARTIAL" in text:
+                    return "PARTIAL"
+                if "VERDICT: IRRELEVANT" in text or "VERDICT:IRRELEVANT" in text:
+                    return "IRRELEVANT"
+                if "VERDICT: UNCERTAIN" in text or "VERDICT:UNCERTAIN" in text:
+                    return "UNCERTAIN"
+                
+                # Loose fallback - look for standalone verdict words
+                if "RELEVANT" in text and "IRRELEVANT" not in text and "PARTIAL" not in text:
+                    return "RELEVANT"
+                if "IRRELEVANT" in text:
+                    return "IRRELEVANT"
+                if "PARTIAL" in text:
+                    return "PARTIAL"
+                    
+            except Exception as e:
+                print(f"LLM Relevance Check failed: {e}")
+                continue
+        
+        # Fail-closed: If LLM fails, treat as uncertain (which will be handled conservatively)
+        return "UNCERTAIN"

@@ -1,0 +1,18 @@
+D:\Apps\mini-proj\utils\llm_service.py:2: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+
+Testing Grading Inflation (Irrelevant Code with High Effort/Structure)...
+Total Score (Expect ~2-5): 2.0
+Feedback Highlights: ['Irrelevant submission: Code does not address problem (Low match ratio: 0%).', 'Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.']
+PASS: Irrelevant high-quality code received low score.
+
+Testing Correct Solution (Should get full rewards)...
+Total Score (Expect 80-100): 84.0
+PASS: Correct solution received full rewards.

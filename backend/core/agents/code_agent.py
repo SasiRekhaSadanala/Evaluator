@@ -12,6 +12,13 @@ class CodeEvaluationAgent(EvaluationAgent):
     def __init__(self):
         super().__init__()
         self.llm_service = LLMService()
+        self.STOP_WORDS = {
+            "function", "return", "class", "solution", "input", "output", "code", 
+            "string", "include", "std", "write", "example", "explanation", "leetcode",
+            "implement", "given", "problem", "following", "int", "float", "double", 
+            "bool", "void", "vector", "list", "map", "set", "array", "if", "for", 
+            "while", "const", "main", "args", "public", "private"
+        }
     
     def _detect_language(self, code: str, filename: str = "") -> str:
         """Detect programming language from code or filename."""
@@ -48,7 +55,6 @@ class CodeEvaluationAgent(EvaluationAgent):
         student_code = input_data.get("student_code", "")
         filename = input_data.get("filename", "")
 
-        # Detect language
         language = self._detect_language(student_code, filename)
 
         feedback = []
@@ -60,24 +66,35 @@ class CodeEvaluationAgent(EvaluationAgent):
         )
         scores["approach"] = approach_score
 
-        # Hard Gate: If irrelevant, fail immediately
-        if approach_score == 0:
-            scores["readability"] = 0
-            scores["structure"] = 0
-            scores["effort"] = 0
-            feedback.append("⚠️ Irrelevant submission: Code does not address the problem. All scores set to 0.")
+        # 1. Conditional Effort Rewarding (Fixing Grading Inflation)
+        # We evaluate approach first, then use it as a gate for other categories.
+        
+        # Determine Relevance Multiplier
+        # Natural Gate: Scale other rewards based on approach relevance
+        # If approach is high (>=60), we treat it as fully relevant for effort/structure
+        if approach_score >= 60:
+            relevance_multiplier = 1.0
         else:
-            # Analyze readability
-            readability_score = self._evaluate_readability(student_code, feedback, language)
-            scores["readability"] = readability_score
+            relevance_multiplier = approach_score / 60.0
+        
+        # Analyze readability
+        readability_raw = self._evaluate_readability(student_code, feedback, language)
+        # Readability gets minimal credit (capped at 10%) if irrelevant, otherwise scaled by relevance
+        if approach_score == 0:
+            scores["readability"] = min(readability_raw, 10)
+        else:
+            scores["readability"] = readability_raw * relevance_multiplier
+        
+        # Analyze structure - ONLY rewarded if relevant
+        structure_raw = self._evaluate_structure(student_code, feedback, language)
+        scores["structure"] = structure_raw * relevance_multiplier
+        
+        # Analyze visible effort - ONLY rewarded if relevant
+        effort_raw = self._evaluate_effort(student_code, feedback, language)
+        scores["effort"] = effort_raw * relevance_multiplier
 
-            # Analyze structure
-            structure_score = self._evaluate_structure(student_code, feedback, language)
-            scores["structure"] = structure_score
-
-            # Analyze visible effort
-            effort_score = self._evaluate_effort(student_code, feedback, language)
-            scores["effort"] = effort_score
+        if approach_score == 0:
+            feedback.append("Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.")
 
         # Calculate total score
         weights = rubric.get("weights", {
@@ -120,15 +137,38 @@ class CodeEvaluationAgent(EvaluationAgent):
         self, code: str, problem: str, feedback: List[str], language: str = "python"
     ) -> float:
         """Evaluate if the approach addresses the problem."""
-        score = 50  # Base score
+        
+        # Step 1: LLM-based Relevance Check (Primary Gate)
+        llm_verdict = None
+        if self.llm_service.enabled:
+            llm_verdict = self.llm_service.check_relevance(problem, code, "code")
+            
+            # Handle verdicts strictly
+            if llm_verdict == "IRRELEVANT":
+                feedback.append("⚠️ LLM determined code is irrelevant to the problem. Score: 0.")
+                return 0
+            elif llm_verdict == "PARTIAL":
+                feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
+                # Continue to keyword check but cap the score
+            elif llm_verdict == "RELEVANT":
+                feedback.append("✓ LLM verified submission is relevant to the problem.")
+                # Continue to keyword check for final scoring
+            elif llm_verdict == "UNCERTAIN":
+                # feedback.append("⚠️ LLM could not determine relevance. Falling back to keyword analysis.")
+                pass
+                # Continue to keyword check as fallback
+
+        score = 0  # Base score removed via previous fix, keeping it 0 here.
 
         if language == "python":
-            return self._evaluate_approach_python(code, problem, feedback)
+            return self._evaluate_approach_python(code, problem, feedback, llm_verdict)
         else:  # C++
-            return self._evaluate_approach_cpp(code, problem, feedback)
+            return self._evaluate_approach_cpp(code, problem, feedback, llm_verdict)
+
+
     
     def _evaluate_approach_python(
-        self, code: str, problem: str, feedback: List[str]
+        self, code: str, problem: str, feedback: List[str], llm_verdict: str = None
     ) -> float:
         """Evaluate Python code approach using AST."""
         score = 0
@@ -136,11 +176,12 @@ class CodeEvaluationAgent(EvaluationAgent):
         try:
             tree = ast.parse(code)
         except SyntaxError:
-            feedback.append("❌ Code has syntax errors. Review and fix them.")
+            feedback.append("Code has syntax errors. Review and fix them.")
             return 0
 
-        # Simple keyword matching for problem relevance
-        problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
+        # Simple keyword matching for problem relevance (Fallback/Heuristic)
+        problem_keywords = [w for w in set(re.findall(r'\b\w{4,}\b', problem.lower())) if w not in self.STOP_WORDS]
+        
         code_lower = code.lower()
         
         covered_keywords = [w for w in problem_keywords if w in code_lower]
@@ -151,36 +192,46 @@ class CodeEvaluationAgent(EvaluationAgent):
         
         keyword_matches = len(covered_keywords)
 
-        if keyword_matches > 0:
-            score += 60
-            msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
-            if missing_keywords and not self.llm_service.enabled:
-                msg += f" Missing: {', '.join(missing_keywords[:3])}"
-            feedback.append(msg)
-        else:
-            feedback.append("❌ Code does not appear to address the problem statement.")
-            return 0  # Irrelevant submission
+        # Strict Threshold Calculation
+        total_keywords = len(problem_keywords)
+        match_ratio = len(covered_keywords) / total_keywords if total_keywords > 0 else 0
 
-        # Check for functions or classes (indicates problem-solving approach)
-        functions = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
-        classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+        # LLM-based scoring (if LLM gave a verdict)
+        if llm_verdict in ["RELEVANT", "PARTIAL"]:
+             # LLM confirmed relevance, use keyword match to refine score
+             if match_ratio >= 0.3 or len(covered_keywords) >= 3:
+                 score = 100 if llm_verdict == "RELEVANT" else 80
+                 feedback.append(f"Relevant approach with good keyword alignment.")
+             elif match_ratio >= 0.15:
+                 score = 90 if llm_verdict == "RELEVANT" else 60
+                 feedback.append(f"Relevant approach (LLM verified).")
+             else:
+                 score = 80 if llm_verdict == "RELEVANT" else 30
 
-        if functions or classes:
-            score += 40
-            feedback.append("✓ Code is organized with functions or classes.")
+                 feedback.append("LLM verified relevance, but keyword match is minimal.")
+        
+        # Fallback (LLM disabled, uncertain, or failed) - BE STRICT
         else:
-            feedback.append("→ Consider organizing code with functions or classes.")
+            if match_ratio >= 0.25 or len(covered_keywords) >= 2:
+                score = 75
+                msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
+                feedback.append(msg)
+            else:
+                feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
+                return 0  # Fail-Closed: Irrelevant if not 25%+ match or <3 keywords
 
         return min(score, 100)
+
     
     def _evaluate_approach_cpp(
-        self, code: str, problem: str, feedback: List[str]
+        self, code: str, problem: str, feedback: List[str], llm_verdict: str = None
     ) -> float:
         """Evaluate C++ code approach using regex patterns."""
         score = 0
 
-        # Simple keyword matching for problem relevance
-        problem_keywords = [w for w in problem.lower().split() if len(w) > 3]
+        # Simple keyword matching for problem relevance (Fallback/Heuristic)
+        problem_keywords = [w for w in set(re.findall(r'\b\w{4,}\b', problem.lower())) if w not in self.STOP_WORDS]
+
         code_lower = code.lower()
         
         covered_keywords = [w for w in problem_keywords if w in code_lower]
@@ -191,38 +242,34 @@ class CodeEvaluationAgent(EvaluationAgent):
         
         keyword_matches = len(covered_keywords)
 
-        if keyword_matches > 0:
-            score += 60
-            msg = f"✓ Code addresses problem concepts ({keyword_matches} matches)."
-            if missing_keywords and not self.llm_service.enabled:
-                msg += f" Missing: {', '.join(missing_keywords[:3])}"
-            feedback.append(msg)
-        else:
-            feedback.append("❌ Code does not appear to address the problem statement.")
-            return 0  # Irrelevant submission
+        # Strict Threshold Calculation
+        total_keywords = len(problem_keywords)
+        match_ratio = len(covered_keywords) / total_keywords if total_keywords > 0 else 0
 
-        # Check for functions (basic pattern)
-        function_pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{'
-        functions = re.findall(function_pattern, code)
-        
-        # Check for classes
-        class_pattern = r'class\s+\w+'
-        classes = re.findall(class_pattern, code)
-        
-        if functions or classes:
-            score += 30
-            feedback.append(f"✓ Code is organized with {len(functions)} function(s) and {len(classes)} class(es).")
+        # LLM-based scoring (if LLM gave a verdict)
+        if llm_verdict in ["RELEVANT", "PARTIAL"]:
+             # LLM confirmed relevance, use keyword match to refine score
+             if match_ratio >= 0.3 or len(covered_keywords) >= 3:
+                 score = 100 if llm_verdict == "RELEVANT" else 80
+                 feedback.append(f"Relevant approach with good keyword alignment.")
+             elif match_ratio >= 0.15:
+                 score = 90 if llm_verdict == "RELEVANT" else 60
+                 feedback.append(f"Relevant approach (LLM verified).")
+             else:
+                 score = 80 if llm_verdict == "RELEVANT" else 30
+                 feedback.append("LLM verified relevance, but keyword match is minimal.")
         else:
-            feedback.append("→ Consider organizing code with functions or classes.")
-        
-        # Check for includes (shows awareness of libraries)
-        include_pattern = r'#include\s*[<"][^>"]+[>"]'
-        includes = re.findall(include_pattern, code)
-        if includes:
-            score += 10
-            feedback.append(f"✓ Code includes {len(includes)} header file(s).")
-        
+            # Fallback (LLM disabled, uncertain, or failed) - Strict
+            if match_ratio >= 0.25 or len(covered_keywords) >= 2:
+                score = 75
+                msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
+                feedback.append(msg)
+            else:
+                feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
+                return 0  # Irrelevant submission
+
         return min(score, 100)
+
 
     def _evaluate_readability(self, code: str, feedback: List[str], language: str = "python") -> float:
         """Evaluate code readability."""
@@ -233,7 +280,7 @@ class CodeEvaluationAgent(EvaluationAgent):
 
         if long_lines == 0:
             score += 60
-            feedback.append("✓ Line length is appropriate for readability.")
+            feedback.append("Line length is appropriate for readability.")
         else:
             feedback.append(
                 f"→ {long_lines} lines exceed 100 characters. Break them into shorter lines."
@@ -250,7 +297,7 @@ class CodeEvaluationAgent(EvaluationAgent):
         
         if comment_lines > 0:
             score += 40
-            feedback.append(f"✓ Code includes comments ({comment_lines} found).")
+            feedback.append(f"Code includes comments ({comment_lines} found).")
         else:
             feedback.append("→ Add comments to explain your logic.")
 
@@ -274,7 +321,7 @@ class CodeEvaluationAgent(EvaluationAgent):
 
             if total_definitions > 0:
                 score += 60
-                feedback.append(f"✓ Good modularization ({total_definitions} functions/classes).")
+                feedback.append(f"Good modularization ({total_definitions} functions/classes).")
             else:
                 feedback.append("→ Consider breaking code into functions for reusability.")
 
@@ -285,7 +332,7 @@ class CodeEvaluationAgent(EvaluationAgent):
             ]
             if assignments:
                 score += 40
-                feedback.append("✓ Code uses variable assignments (structured logic).")
+                feedback.append("Code uses variable assignments (structured logic).")
         else:  # C++
             # Count functions and classes using regex
             function_pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{'
@@ -298,7 +345,7 @@ class CodeEvaluationAgent(EvaluationAgent):
             
             if total_definitions > 0:
                 score += 60
-                feedback.append(f"✓ Good modularization ({total_definitions} functions/classes).")
+                feedback.append(f"Good modularization ({total_definitions} functions/classes).")
             else:
                 feedback.append("→ Consider breaking code into functions for reusability.")
             
@@ -324,7 +371,7 @@ class CodeEvaluationAgent(EvaluationAgent):
 
         if code_lines > 5:
             score += 60
-            feedback.append(f"✓ Substantial code submission ({code_lines} lines).")
+            feedback.append("Substantial code submission" + f" ({code_lines} lines).")
         elif code_lines > 0:
             score += 30
             feedback.append("→ Your solution is brief. Consider adding more logic or cases.")

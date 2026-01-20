@@ -1,0 +1,20 @@
+DataBase Management System (DBMS) is 5 credit course in the academic year 2024 - 2025. It is offered to the student from different branches like dsai, cse.
+
+
+create a detailed report on proposed solution and implementation plan for the hackathon on the problem statement:
+AI/ML & Natural Language Processing Challenge
+Organizations generate huge amounts of internal knowledge (technical manuals, research papers, project reports, compliance docs). Searching these documents manually is inefficient, and cloud/internet-based solutions raise privacy and security concerns.
+
+Core Features
+1. Document Upload & Indexing
+Multi-format support (PDF/DOCX/TXT)
+AI embeddings and preprocessing
+System indexing using AI embeddings
+2. AI Model Integration
+Offline LLM implementation
+RAG pipeline (Retriever + Generator)
+Document-based response generation only
+3. Interactive Chatbot
+Natural language queries
+Citation and source referencing
+Complete offline operation

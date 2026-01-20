@@ -155,7 +155,7 @@ class AggregatorAgent(EvaluationAgent):
         # Organize: AI Insights first (priority semantic feedback), then standard categories
         organized = []
         if llm_explanations:
-            organized.append("## AI Insights")
+            organized.append("## AI Evaluator")
             organized.extend(llm_explanations)
             organized.append("") # Spacer
             
