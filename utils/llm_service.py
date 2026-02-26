@@ -108,11 +108,15 @@ class LLMService:
         if relevance_status == "IRRELEVANT":
             relevance_instructions = """
 1. Format your response into these exact sections:
-    **Summary**: Explicitly state that the submission solves a different problem or is completely irrelevant. Briefly mention what their code actually does. DO NOT try to force the required rubric concepts onto their unrelated code.
+    **Summary**: Explicitly state that the submission is irrelevant to the assigned problem. Briefly mention what their code/text actually does. DO NOT try to force the required rubric concepts onto their unrelated content.
     
-    **Corrections Needed**: Patiently and coolly explain WHY it is inaccurate or irrelevant. Tell the student exactly how they SHOULD approach the actual assigned problem conceptually instead of what they did.
+    **Corrections Needed**: 
+    - Explain WHY the submission is irrelevant.
+    - Provide a "How to Approach" guide specifically for the ACTUAL assigned problem.
+    - Include high-level Pseudo-code or conceptual steps to solve the assigned task.
+    - BE COMPREHENSIVE: Help the student understand the correct problem they missed.
     
-    **Strengths**: Acknowledge any minor technical strengths (like using a loop or syntax), but keep it brief since the code evaluates as irrelevant.
+    **Strengths**: Acknowledge any minor technical strengths (like syntax or organization), but stay brief.
 """
         else:
             relevance_instructions = """

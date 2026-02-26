@@ -1,0 +1,247 @@
+﻿python : 
+D:\Apps\mini-proj\utils\llm_service.py:3: 
+FutureWarning: 
+At line:1 char:1
++ python test_feedback.py > 
+verification_feedback.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo              : 
+NotSpecified: (D    :\Apps\mini-pr...Futu   
+ reWarning: :String) [    ], RemoteException
+    + FullyQualifiedError    Id : 
+NativeCommandErr    or
+ 
+
+All support for the `google.generativeai` 
+package has ended. It will no longer be 
+receiving 
+updates or bug fixes. Please switch to the 
+`google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-
+generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+LLM Relevance Check failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 31.689245196s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 31
+}
+]
+LLM Relevance Check failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 31.367262426s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 31
+}
+]
+
+--- CODE EVALUATION (IRRELEVANT) ---
+Score: 2.0
+Feedback:
+LLM Explanation:
+**Summary**: The submitted code defines a basic function to print a string but does not yet implement the required logic to calculate the greatest common divisor between two numbers.
+**Corrections Needed**: To better satisfy the approach and effort criteria, you need to move beyond a simple print statement and use **Python** to actually **calculate** the **greatest common** **divisor** for two or more **numbers**. The current solution is very brief, and because it lacks the core logic to find a **common** factor, it doesn't quite meet the structural requirements of the assignment. You should implement a loopùspecifically, you could use a `while` loop to apply the Euclidean algorithm, which repeatedly finds the remainder of two numbers until the result is zero. To help with your readability and structure scores, you need to write comments right before your logic explaining the process, like this: "# Using a while loop to find the largest integer that divides both inputs without a remainder." This will provide the necessary technical depth the evaluation is looking for.
+**Strengths**:
+- You correctly utilized the Python `def` keyword to structure a function.
+- The code is syntactically valid and runs without errors.
+- Your comment shows you are already thinking about the structural elements (like loops) needed for the next step.
+LLM Relevance Check failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 23.846311887s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 23
+}
+]
+LLM Relevance Check failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 23.581622947s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 23
+}
+]
+
+--- CONTENT EVALUATION (IRRELEVANT) ---
+Score: 0
+Feedback:
+LLM Explanation:
+**Summary**: The submission is irrelevant to the assigned problem. Your text provides a brief update on financial market trends and tech earnings rather than addressing the scientific biological concepts required by the prompt.
+**Corrections Needed**: The submission is considered irrelevant because there is a total disconnect between the subject matter of the response (finance) and the required subject matter (biology). Because no key concepts from the prompt were identified, the evaluation shows a very low concept coverage. To address the assigned task, you must pivot your focus toward how living organisms generate energy. Specifically, you need to **explain** the biological **process** known as **photosynthesis**, which is the method by which **plants** and other organisms convert light into chemical energy.
+How to approach the assignment:
+1. Identify the Subject: Focus specifically on **plants** and their role as autotrophs.
+2. Define the Goal: Provide a clear **explain**-ation of how energy is captured from the sun.
+3. Detail the Mechanism: Outline the step-by-step **process** involving chlorophyll, water, and carbon dioxide.
+4. Synthesize: Combine these elements to describe the full cycle of **photosynthesis**, including the production of glucose and oxygen.
+Conceptual Steps:
+- Start by identifying the primary producer (e.g., a green plant).
+- Describe the input of light energy, water, and CO2.
+- Detail the chemical transformation occurring within the chloroplasts.
+- Conclude with the output of oxygen and chemical energy (sugar).
+**Strengths**: Although the content does not align with the rubric, your writing is concise and demonstrates good grammatical structure. The logic used to connect tech earnings to market movement shows an ability to identify cause-and-effect relationships.

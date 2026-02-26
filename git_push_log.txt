@@ -1,0 +1,25 @@
+Adding files...
+warning: in the working copy of 'git_clean_output.txt', LF will be replaced by CRLF the next time Git touches it
+
+Committing...
+[main 3321f9f] feat: upgrade to gemini-2.0-flash and unify/streamline feedback
+ 24 files changed, 330 insertions(+), 62 deletions(-)
+ create mode 100644 available_models.txt
+ create mode 100644 debug_output_utf8.txt
+ create mode 100644 debug_output_v2.txt
+ create mode 100644 debug_rubric.json
+ create mode 100644 direct_eval_out.txt
+ create mode 100644 force_push.py
+ create mode 100644 git_clean_output.txt
+ create mode 100644 git_status_v3.txt
+ create mode 100644 import_test.txt
+ create mode 100644 parse_err.txt
+ create mode 100644 powershell_test.txt
+ create mode 100644 test_feedback.py
+ create mode 100644 test_output.txt
+ create mode 100644 test_rubric_parse_output.txt
+ create mode 100644 write_test.txt
+
+Pushing...
+To https://github.com/SasiRekhaSadanala/Evaluator.git
+   f5c61c4..3321f9f  main -> main

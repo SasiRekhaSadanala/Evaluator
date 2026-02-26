@@ -125,15 +125,11 @@ class AggregatorAgent(EvaluationAgent):
                 unique_feedback.append(item)
                 seen.add(item)
 
-        # Organize by type: strengths (✓), improvements (→), issues (❌)
-        strengths = [f for f in unique_feedback if f.startswith("✓")]
-        improvements = [f for f in unique_feedback if f.startswith("→")]
-        issues = [f for f in unique_feedback if f.startswith("❌") or f.startswith("[x]")]
+        # Extract LLM explanations while preserving their internal structure
+        final_unique_feedback = []
         llm_explanations = []
         is_llm_section = False
         
-        # Extract LLM explanations while preserving their internal structure
-        final_unique_feedback = []
         for f in unique_feedback:
             if "LLM Explanation:" in f:
                 is_llm_section = True
@@ -149,6 +145,10 @@ class AggregatorAgent(EvaluationAgent):
             
             final_unique_feedback.append(f)
 
+        # Organize by type ONLY if they were NOT inside the LLM section
+        strengths = [f for f in final_unique_feedback if f.startswith("✓")]
+        improvements = [f for f in final_unique_feedback if f.startswith("→")]
+        issues = [f for f in final_unique_feedback if f.startswith("❌") or f.startswith("[x]")]
         neutral = [f for f in final_unique_feedback if not any(f.startswith(s) for s in ["✓", "→", "❌", "ℹ", "##", "["])]
         info = [f for f in final_unique_feedback if f.startswith("ℹ")]
 
