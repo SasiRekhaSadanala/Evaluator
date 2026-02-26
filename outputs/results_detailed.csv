@@ -1,12 +1,10 @@
 submission_id,final_score,max_score,feedback,assignment_type,file
 c1_Result,1.1,100,## AI Evaluator,code,c1.cpp
-c1_Result,1.1,100,**Summary**: The code iterates through a vector of integers to identify those with exactly four divisors and calculates the cumulative sum of these divisors using prime factorization logic.,code,c1.cpp
-c1_Result,1.1,100,**Corrections Needed**:,code,c1.cpp
-c1_Result,1.1,100,"To improve the solution, you should add documentation to clarify how each **element** is processed within the array **length**. It is important to ensure that **each** **integer** is evaluated **only** to find **exactly** four divisors, **because** the **constraints** of the problem **assume** that a **valid** **answer** **exists** for specific **numbers** **such** that no prime factor is used **twice** in the **same** way. You need to verify that the **indices** and **order** of operations correctly identify the **target** **integers** and **that** **they** **would** **have** the correct divisor sum. Finally, adding comments as suggested in the findings will bridge the gap in readability and help explain why specific prime factorization logic was chosen for these **integers**.",code,c1.cpp
+c1_Result,1.1,100,**Summary**: This code aims to calculate the total sum of divisors for every **integer** in a given array that possesses **exactly** four divisors by utilizing prime factorization logic and specific divisor checks.,code,c1.cpp
+c1_Result,1.1,100,"**Corrections Needed**: To improve your approach, consider the **constraints** of the input **length** and the range of **each** **integer** **element** to ensure your logic remains **valid**. While you **assume** **that** a correct **answer** **exists**, your implementation must guarantee **exactly** four divisors are identified for the **numbers** without counting the **same** factor **twice**. You **would** benefit from adding comments to explain the **order** of operations, **because** it is difficult to understand how **such** specific **integers** and **indices** are evaluated against the **target** criteria. Clearer documentation is necessary to describe how these values **have** been filtered and why **they** **only** move forward if they meet the specific divisor requirements.",code,c1.cpp
 c1_Result,1.1,100,**Strengths**:,code,c1.cpp
-c1_Result,1.1,100,- The implementation effectively utilizes control flow with nine distinct conditions and loops to manage divisor logic.,code,c1.cpp
-c1_Result,1.1,100,- The use of a modular `is_prime` helper function demonstrates a structured approach to mathematical verification.,code,c1.cpp
-c1_Result,1.1,100,"- The logic correctly accounts for different mathematical cases, such as perfect cubes of prime numbers, to identify divisors.",code,c1.cpp
+c1_Result,1.1,100,- Demonstrates strong effort through the use of 9 distinct control flow conditions and loops to manage complex mathematical logic.,code,c1.cpp
+c1_Result,1.1,100,"- Shows a well-structured approach by modularizing the primality check into a separate function, which aids in processing multiple integers efficiently.",code,c1.cpp
 c1_Result,1.1,100,,code,c1.cpp
 c1_Result,1.1,100,## Strengths,code,c1.cpp
 c1_Result,1.1,100,✓ Code includes control flow (9 conditions/loops).,code,c1.cpp
@@ -17,14 +15,6 @@ c1_Result,1.1,100,Line length is appropriate for readability.,code,c1.cpp
 c1_Result,1.1,100,Good modularization (3 functions/classes).,code,c1.cpp
 c1_Result,1.1,100,Substantial code submission (32 lines).,code,c1.cpp
 c1_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c1.cpp
-c2_Result,1.1,100,## AI Evaluator,code,c2.cpp
-c2_Result,1.1,100,**Summary**: The code increments a large integer represented as a vector of digits by iterating from the last index and handling carry-over logic when a digit is nine.,code,c2.cpp
-c2_Result,1.1,100,**Corrections Needed**:,code,c2.cpp
-c2_Result,1.1,100,"Your submission lacks internal documentation to explain how each **element** is handled to ensure a **valid** **answer**. You must define the **order** of operations **such** **that** it is clear how **indices** are tracked within the **length** of the **integer** array. It is vital to **assume** **exactly** how the **target** is reached and why **only** certain **numbers** are modified **because** the **constraints** of the **integers** **have** specific requirements. Without comments, it is difficult to see how **they** **exists** in the **same** logic flow or why you **would** not use the same value **twice** when returning the **nums**. Providing these details is necessary to demonstrate that the logic remains sound across all edge cases.",code,c2.cpp
-c2_Result,1.1,100,**Strengths**:,code,c2.cpp
-c2_Result,1.1,100,- Successfully implements control flow using a `while` loop and conditional `if-else` logic to manage arithmetic carries.,code,c2.cpp
-c2_Result,1.1,100,- Demonstrates a solid structural approach by efficiently handling the edge case where a new digit must be inserted at the beginning.,code,c2.cpp
-c2_Result,1.1,100,,code,c2.cpp
 c2_Result,1.1,100,## Strengths,code,c2.cpp
 c2_Result,1.1,100,✓ Code includes control flow (2 conditions/loops).,code,c2.cpp
 c2_Result,1.1,100,## Areas for Improvement,code,c2.cpp
@@ -34,13 +24,6 @@ c2_Result,1.1,100,Line length is appropriate for readability.,code,c2.cpp
 c2_Result,1.1,100,Good modularization (1 functions/classes).,code,c2.cpp
 c2_Result,1.1,100,Substantial code submission (14 lines).,code,c2.cpp
 c2_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c2.cpp
-Two_sum_Result,73.5,100,## AI Evaluator,code,Two_sum.cpp
-Two_sum_Result,73.5,100,**Summary**: This submission implements a two-pass hash map approach to identify two indices within an array that sum to a specific target value.,code,Two_sum.cpp
-Two_sum_Result,73.5,100,"**Corrections Needed**: To refine your work, ensure you address the constraints stating that each integer element in the input is such that exactly one valid answer exists. The logic should assume the length of the numbers vector allows for exactly two integers that sum to the target, ensuring you do not use the same index twice. Because the readability score is affected by missing documentation, you would benefit from adding comments to explain how indices are mapped and why a specific valid answer is returned. Clearly defining how each integer behaves in the map would clarify that they only form one unique pair and that they are the only valid solution. Finally, verify that the indices found are indeed the only ones that satisfy the target requirement within the given constraints during your search.",code,Two_sum.cpp
-Two_sum_Result,73.5,100,**Strengths**:,code,Two_sum.cpp
-Two_sum_Result,73.5,100,*   The implementation correctly utilizes control flow through the use of multiple loops and conditional logic.,code,Two_sum.cpp
-Two_sum_Result,73.5,100,"*   The approach uses an unordered_map to optimize the search process, demonstrating a strong understanding of time complexity.",code,Two_sum.cpp
-Two_sum_Result,73.5,100,,code,Two_sum.cpp
 Two_sum_Result,73.5,100,## Strengths,code,Two_sum.cpp
 Two_sum_Result,73.5,100,✓ Code includes control flow (3 conditions/loops).,code,Two_sum.cpp
 Two_sum_Result,73.5,100,## Areas for Improvement,code,Two_sum.cpp

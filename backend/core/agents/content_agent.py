@@ -56,20 +56,22 @@ class ContentEvaluationAgent(EvaluationAgent):
                             "The submission is irrelevant. "
                             "Explain briefly what the text discusses, then explain the assigned topic in detail."
                         ),
-                        deterministic_findings=[
-                            "Content does not address the assigned topic."
-                        ],
+                        deterministic_findings=[], # Zero deterministic noise
                         missing_concepts=[],
                         relevance_status="IRRELEVANT",
                         evaluation_mode="TEACHING"
                     )
-                    if llm_feedback:
-                        feedback = ["LLM Explanation:"] + llm_feedback
                     
+                    return {
+                        "score": 0,
+                        "max_score": 100,
+                        "feedback": [] if not llm_feedback else (["LLM Explanation:"] + llm_feedback)
+                    }
+                
                 return {
                     "score": 0,
                     "max_score": 100,
-                    "feedback": ["❌ Irrelevant submission."] + feedback
+                    "feedback": ["❌ Irrelevant submission. Content does not address the assigned topic."]
                 }
             elif verdict == "UNCERTAIN":
                 # feedback.append("⚠️ LLM could not determine relevance. Treating as irrelevant for safety. Score: 0.")
@@ -113,18 +115,22 @@ class ContentEvaluationAgent(EvaluationAgent):
                         "The submission is irrelevant. "
                         "Explain briefly what the text discusses, then explain the assigned topic in detail."
                     ),
-                    deterministic_findings=["No key concepts from the prompt were found."],
+                    deterministic_findings=[], # Zero deterministic noise
                     missing_concepts=getattr(self, "_last_missing_concepts", []),
                     relevance_status="IRRELEVANT",
                     evaluation_mode="TEACHING"
                 )
-                if llm_feedback:
-                    feedback = ["LLM Explanation:"] + llm_feedback
-            
+                
+                return {
+                    "score": 0,
+                    "max_score": 100,
+                    "feedback": [] if not llm_feedback else (["LLM Explanation:"] + llm_feedback)
+                }
+
             return {
                 "score": 0,
                 "max_score": 100,
-                "feedback": ["❌ Irrelevant submission."] + feedback
+                "feedback": ["❌ Irrelevant submission. No key concepts found."]
             }
 
         scores["coverage"] = coverage_score
