@@ -66,12 +66,39 @@ class CodeEvaluationAgent(EvaluationAgent):
         )
         scores["approach"] = approach_score
 
-        # 1. Conditional Effort Rewarding (Fixing Grading Inflation)
-        # We evaluate approach first, then use it as a gate for other categories.
-        
+        # HARD IRRELEVANCE GATE (CRITICAL FIX)
+        verdict = getattr(self, "_last_relevance_verdict", "")
+        if verdict == "IRRELEVANT" or approach_score == 0:
+            if self.llm_service.enabled:
+                llm_feedback = self.llm_service.generate_semantic_feedback(
+                    context_type="code",
+                    submission_content=student_code,
+                    rubric_context=(
+                        "The submission is irrelevant. "
+                        "Explain briefly what the code does, then explain how the assigned problem should be solved."
+                    ),
+                    deterministic_findings=[
+                        "Submission solves a different problem than assigned."
+                    ] if verdict == "IRRELEVANT" else ["Code does not address the required logic (Low relevance)."],
+                    missing_concepts=[],
+                    relevance_status=verdict if verdict else "IRRELEVANT",
+                    evaluation_mode="TEACHING"
+                )
+
+                return {
+                    "score": 0,
+                    "max_score": 100,
+                    "feedback": ["❌ Irrelevant submission."] + llm_feedback
+                }
+
+            return {
+                "score": 0,
+                "max_score": 100,
+                "feedback": ["❌ Irrelevant submission. This code does not attempt the assigned problem."]
+            }
+
         # Determine Relevance Multiplier
         # Natural Gate: Scale other rewards based on approach relevance
-        # If approach is high (>=60), we treat it as fully relevant for effort/structure
         if approach_score >= 60:
             relevance_multiplier = 1.0
         else:

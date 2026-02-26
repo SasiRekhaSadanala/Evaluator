@@ -15,7 +15,8 @@ def test_code():
     res = agent.evaluate(input_data)
     print("\n--- CODE EVALUATION (IRRELEVANT) ---")
     print("Score:", res["score"])
-    print("Feedback:\n" + "\n".join(res["feedback"]))
+    feedback_str = "\n".join(res["feedback"])
+    print("Feedback:\n" + feedback_str.encode('ascii', errors='replace').decode('ascii'))
 
 def test_content():
     agent = ContentEvaluationAgent()
@@ -27,7 +28,8 @@ def test_content():
     res = agent.evaluate(input_data)
     print("\n--- CONTENT EVALUATION (IRRELEVANT) ---")
     print("Score:", res["score"])
-    print("Feedback:\n" + "\n".join(res["feedback"]))
+    feedback_str = "\n".join(res["feedback"])
+    print("Feedback:\n" + feedback_str.encode('ascii', errors='replace').decode('ascii'))
 
 if __name__ == "__main__":
     test_code()
