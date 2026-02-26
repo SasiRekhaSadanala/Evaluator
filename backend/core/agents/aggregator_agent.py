@@ -152,26 +152,30 @@ class AggregatorAgent(EvaluationAgent):
         neutral = [f for f in final_unique_feedback if not any(f.startswith(s) for s in ["✓", "→", "❌", "ℹ", "##", "["])]
         info = [f for f in final_unique_feedback if f.startswith("ℹ")]
 
-        # Organize: AI Insights first (priority semantic feedback), then standard categories
+        # Organize: AI Insights first (priority semantic feedback)
+        # If AI feedback exists, we SUPPRESS ALL standard deterministic categories
+        # This includes Strengths, Areas for Improvement, Issues, Info, and Neutral.
+        # This ensures the student gets a purely AI-guided experience as requested.
         organized = []
         if llm_explanations:
             organized.append("## AI Evaluator")
             organized.extend(llm_explanations)
             organized.append("") # Spacer
-            
-        if strengths:
-            organized.append("## Strengths")
-            organized.extend(strengths)
-        if improvements:
-            organized.append("## Areas for Improvement")
-            organized.extend(improvements)
-        if issues:
-            organized.append("## Issues to Address")
-            organized.extend(issues)
-        if info:
-            organized.append("## Additional Notes")
-            organized.extend(info)
-        if neutral:
-            organized.extend(neutral)
+        else:
+            # Only show standard categories if LLM is disabled or failed
+            if strengths:
+                organized.append("## Strengths")
+                organized.extend(strengths)
+            if improvements:
+                organized.append("## Areas for Improvement")
+                organized.extend(improvements)
+            if issues:
+                organized.append("## Issues to Address")
+                organized.extend(issues)
+            if info:
+                organized.append("## Additional Notes")
+                organized.extend(info)
+            if neutral:
+                organized.extend(neutral)
 
         return organized if organized else unique_feedback
