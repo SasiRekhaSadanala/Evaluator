@@ -120,12 +120,12 @@ class CodeEvaluationAgent(EvaluationAgent):
                 submission_content=student_code,
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
-                missing_concepts=missing_concepts
+                missing_concepts=missing_concepts,
+                relevance_status=getattr(self, "_last_relevance_verdict", "UNCERTAIN")
             )
             
             if llm_feedback:
-                feedback.append("LLM Explanation:")  # Step 5
-                feedback.extend(llm_feedback)
+                feedback = ["LLM Explanation:"] + llm_feedback
 
         return {
             "score": round(total_score, 2),
@@ -142,6 +142,7 @@ class CodeEvaluationAgent(EvaluationAgent):
         llm_verdict = None
         if self.llm_service.enabled:
             llm_verdict = self.llm_service.check_relevance(problem, code, "code")
+            self._last_relevance_verdict = llm_verdict
             
             # Handle verdicts strictly
             if llm_verdict == "IRRELEVANT":

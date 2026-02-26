@@ -36,7 +36,7 @@ export default function UploadPage() {
       }
 
       if (data.rubric) {
-        formData.append('rubric_json', data.rubric)
+        formData.append('rubric_content', data.rubric)
       }
 
       // Log for debugging

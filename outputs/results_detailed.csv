@@ -1,16 +1,50 @@
 submission_id,final_score,max_score,feedback,assignment_type,file
-23BDS049_Result,0.0,100,## Issues to Address,content,23BDS049.pdf
-23BDS049_Result,0.0,100,❌ Very low concept coverage (0/12 concepts).,content,23BDS049.pdf
-23BDS049_Result,0.0,100,⚠️ Irrelevant submission: No key concepts from the prompt were found.,content,23BDS049.pdf
-5c_Result,0.0,100,## Issues to Address,content,5c.txt
-5c_Result,0.0,100,❌ Very low concept coverage (0/12 concepts).,content,5c.txt
-5c_Result,0.0,100,⚠️ Irrelevant submission: No key concepts from the prompt were found.,content,5c.txt
-mempal_Result,60.37,100,## Strengths,content,mempal.pdf
-mempal_Result,60.37,100,✓ Well-organized (468 distinct sections).,content,mempal.pdf
-mempal_Result,60.37,100,✓ Sentence structure is clear and varied.,content,mempal.pdf
-mempal_Result,60.37,100,✓ Good use of transitions for logical flow.,content,mempal.pdf
-mempal_Result,60.37,100,✓ Substantial content (3016 words).,content,mempal.pdf
-mempal_Result,60.37,100,✓ Includes examples or specific details.,content,mempal.pdf
-mempal_Result,60.37,100,✓ Includes reasoning or evidence.,content,mempal.pdf
-mempal_Result,60.37,100,## Areas for Improvement,content,mempal.pdf
-mempal_Result,60.37,100,→ Partial coverage (5/12 concepts).,content,mempal.pdf
+c1_Result,1.1,100,## AI Evaluator,code,c1.cpp
+c1_Result,1.1,100,**Summary**: Your code implements a solution to calculate the sum of divisors for integers within a vector that possess exactly four divisors by checking for specific prime-related mathematical properties.,code,c1.cpp
+c1_Result,1.1,100,"**Corrections Needed**: To improve the ""Approach"" and ""Readability"" scores, you must add comments to explain the logic behind identifying a valid **integer** with **exactly** four divisors, such as why you **assume** certain **constraints** or how **each** **element** is processed. The logic should clearly state how **numbers** are handled so that the **answer** remains **valid** and no **indices** are checked **twice** unnecessarily. You must ensure **that** the **order** and **length** of the divisor list are correct **because** **such** specific conditions like **target** prime products must be verified before the **same** divisor is added. Including these explanations **would** clarify how a solution **exists** for **they** who review your code, particularly regarding why specific **integers** **have** been chosen for the final sum. You **only** need to document these decisions to bridge the gap between your code and the requirement to explain your logic.",code,c1.cpp
+c1_Result,1.1,100,**Strengths**:,code,c1.cpp
+c1_Result,1.1,100,- Excellent use of control flow with 9 conditions and loops to identify specific divisor patterns.,code,c1.cpp
+c1_Result,1.1,100,- Strong technical approach in using a helper function to efficiently verify primality.,code,c1.cpp
+c1_Result,1.1,100,- Logical structure that correctly identifies numbers with exactly four divisors ($p^3$ or $p \times q$).,code,c1.cpp
+c1_Result,1.1,100,,code,c1.cpp
+c1_Result,1.1,100,## Strengths,code,c1.cpp
+c1_Result,1.1,100,✓ Code includes control flow (9 conditions/loops).,code,c1.cpp
+c1_Result,1.1,100,## Areas for Improvement,code,c1.cpp
+c1_Result,1.1,100,→ Add comments to explain your logic.,code,c1.cpp
+c1_Result,1.1,100,"Irrelevant submission: Code does not address problem (Low match ratio: 4%, Found 1 keywords).",code,c1.cpp
+c1_Result,1.1,100,Line length is appropriate for readability.,code,c1.cpp
+c1_Result,1.1,100,Good modularization (3 functions/classes).,code,c1.cpp
+c1_Result,1.1,100,Substantial code submission (32 lines).,code,c1.cpp
+c1_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c1.cpp
+c2_Result,1.1,100,## AI Evaluator,code,c2.cpp
+c2_Result,1.1,100,**Summary**: The code implements a function to increment a large integer represented as a vector of digits by iterating backward to handle carries and prepending a new digit when an overflow occurs.,code,c2.cpp
+c2_Result,1.1,100,"**Corrections Needed**: To improve the **readability** and **effort** scores, you must add comments explaining how each **element** is modified, **such** as how you manage **indices** and the **order** of **integers**. You should **assume** that **constraints** define **exactly** how the **length** of **nums** interacts with a **target** **answer**, ensuring **that** **each** **integer** **exists** **only** once and the **same** value isn't used **twice**. **Because** the code lacks comments, it is unclear how **they** **would** **have** formed a **valid** result if the input **numbers** required different logic. This documentation is essential to verify the logic for every **integer**.",code,c2.cpp
+c2_Result,1.1,100,**Strengths**:,code,c2.cpp
+c2_Result,1.1,100,"- The implementation effectively uses control flow, including a while loop and conditional branching, to manage digit incrementing.",code,c2.cpp
+c2_Result,1.1,100,- Your approach correctly identifies and handles the edge case where the array size must increase to accommodate a leading carry.,code,c2.cpp
+c2_Result,1.1,100,,code,c2.cpp
+c2_Result,1.1,100,## Strengths,code,c2.cpp
+c2_Result,1.1,100,✓ Code includes control flow (2 conditions/loops).,code,c2.cpp
+c2_Result,1.1,100,## Areas for Improvement,code,c2.cpp
+c2_Result,1.1,100,→ Add comments to explain your logic.,code,c2.cpp
+c2_Result,1.1,100,"Irrelevant submission: Code does not address problem (Low match ratio: 0%, Found 0 keywords).",code,c2.cpp
+c2_Result,1.1,100,Line length is appropriate for readability.,code,c2.cpp
+c2_Result,1.1,100,Good modularization (1 functions/classes).,code,c2.cpp
+c2_Result,1.1,100,Substantial code submission (14 lines).,code,c2.cpp
+c2_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c2.cpp
+Two_sum_Result,73.5,100,## AI Evaluator,code,Two_sum.cpp
+Two_sum_Result,73.5,100,**Summary**: This code aims to solve the Two Sum problem by utilizing a hash map to store and retrieve the indices of array elements to find a pair that matches a target sum.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,"**Corrections Needed**: Your implementation would benefit from documenting how each **element** is mapped to its **indices** because the **constraints** **assume** that **exactly** one **valid** **answer** **exists**. Since the array **length** can vary, you must explain how **each** **integer** is stored to ensure that **such** **numbers** are not used **twice** for the same **answer**. Adding comments clarifying **that** **they** are processed as **only** unique **integers** would improve **readability** **because** it justifies why the **same** **integer** **would** be a **valid** match. You should explicitly mention that the target **exists** within the **integers** provided to show a full understanding of the **integer** search. These additions are necessary to address the missing documentation of your logic and help others understand your **approach** more clearly.",code,Two_sum.cpp
+Two_sum_Result,73.5,100,**Strengths**:,code,Two_sum.cpp
+Two_sum_Result,73.5,100,- Effectively utilizes an `unordered_map` to achieve an optimized linear time complexity for lookups.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,- Demonstrates strong control flow through the use of multiple loops and conditional logic.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,- Correctly handles the constraint of not using the same array index twice by comparing the map value against the current iterator.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,,code,Two_sum.cpp
+Two_sum_Result,73.5,100,## Strengths,code,Two_sum.cpp
+Two_sum_Result,73.5,100,✓ Code includes control flow (3 conditions/loops).,code,Two_sum.cpp
+Two_sum_Result,73.5,100,## Areas for Improvement,code,Two_sum.cpp
+Two_sum_Result,73.5,100,→ Add comments to explain your logic.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,Code appears relevant based on keyword match (3 matches).,code,Two_sum.cpp
+Two_sum_Result,73.5,100,Line length is appropriate for readability.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,Good modularization (1 functions/classes).,code,Two_sum.cpp
+Two_sum_Result,73.5,100,Substantial code submission (16 lines).,code,Two_sum.cpp

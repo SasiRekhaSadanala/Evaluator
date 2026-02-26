@@ -44,10 +44,21 @@ class ContentEvaluationAgent(EvaluationAgent):
         # Step 0: LLM-based Relevance Check (Primary Gate)
         if self.llm_service.enabled:
             verdict = self.llm_service.check_relevance(problem_statement, student_content, "content")
+            self._last_relevance_verdict = verdict
             
             # Handle verdicts strictly
             if verdict == "IRRELEVANT":
                 feedback.append("⚠️ LLM determined content is irrelevant to the prompt. Score: 0.")
+                llm_feedback = self.llm_service.generate_semantic_feedback(
+                    context_type="content",
+                    submission_content=student_content,
+                    rubric_context=str(rubric),
+                    deterministic_findings=feedback,
+                    missing_concepts=[],
+                    relevance_status="IRRELEVANT"
+                )
+                if llm_feedback:
+                    feedback = ["LLM Explanation:"] + llm_feedback
                 return {
                     "score": 0,
                     "max_score": 100,
@@ -74,6 +85,7 @@ class ContentEvaluationAgent(EvaluationAgent):
             if similarity > 0.6:
                 feedback.append(f"⚠️ Content is too similar to the problem statement ({int(similarity*100)}% match). Score penalized.")
                 is_plagiarism = True
+                self._last_relevance_verdict = "IRRELEVANT"
             else:
                 is_plagiarism = False
         else:
@@ -87,6 +99,17 @@ class ContentEvaluationAgent(EvaluationAgent):
         # Fallback Gate: If LLM is disabled or uncertain, and coverage is zero, fail
         if coverage_score == 0:
             feedback.append("⚠️ Irrelevant submission: No key concepts from the prompt were found.")
+            if self.llm_service.enabled:
+                llm_feedback = self.llm_service.generate_semantic_feedback(
+                    context_type="content",
+                    submission_content=student_content,
+                    rubric_context=str(rubric),
+                    deterministic_findings=feedback,
+                    missing_concepts=getattr(self, "_last_missing_concepts", []),
+                    relevance_status="IRRELEVANT"
+                )
+                if llm_feedback:
+                    feedback = ["LLM Explanation:"] + llm_feedback
             return {
                 "score": 0,
                 "max_score": 100,
@@ -138,12 +161,12 @@ class ContentEvaluationAgent(EvaluationAgent):
                 submission_content=student_content,
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
-                missing_concepts=missing_concepts
+                missing_concepts=missing_concepts,
+                relevance_status=getattr(self, "_last_relevance_verdict", "UNCERTAIN")
             )
             
             if llm_feedback:
-                feedback.append("LLM Explanation:")  # Step 5
-                feedback.extend(llm_feedback)
+                feedback = ["LLM Explanation:"] + llm_feedback
         
         return {
             "score": round(total_score, 2),

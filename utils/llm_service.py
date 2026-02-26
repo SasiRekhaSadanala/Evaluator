@@ -1,6 +1,7 @@
 import os
+import json
 import google.generativeai as genai
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -15,7 +16,7 @@ class LLMService:
     def __init__(self):
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.enabled = os.getenv("LLM_ENABLED", "false").lower() == "true"
-        self.model_name = os.getenv("LLM_MODEL", "gemini-1.5-flash")
+        self.model_name = os.getenv("LLM_MODEL", "gemini-2.0-flash")
         self._client = None
         self._setup_done = False
 
@@ -45,7 +46,8 @@ class LLMService:
         submission_content: str, 
         rubric_context: str, 
         deterministic_findings: List[str],
-        missing_concepts: List[str] = None
+        missing_concepts: List[str] = None,
+        relevance_status: str = "UNCERTAIN"
     ) -> List[str]:
         """
         Generate qualitative feedback based on deterministic findings.
@@ -66,7 +68,7 @@ class LLMService:
         self._ensure_setup()
         
         # Try a few common model identifiers to avoid 404s/Quotas
-        models_to_try = [self.model_name, "gemini-1.5-flash", "gemini-flash-latest", "gemini-pro"]
+        models_to_try = [self.model_name, "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash", "gemini-pro-latest"]
         # Remove duplicates while preserving order
         models_to_try = list(dict.fromkeys(m for m in models_to_try if m))
         
@@ -74,7 +76,7 @@ class LLMService:
         for model in models_to_try:
             try:
                 client = genai.GenerativeModel(model)
-                prompt = self._build_prompt(context_type, submission_content, rubric_context, deterministic_findings, missing_concepts)
+                prompt = self._build_prompt(context_type, submission_content, rubric_context, deterministic_findings, missing_concepts, relevance_status)
                 response = client.generate_content(prompt)
                 
                 if response.text:
@@ -97,10 +99,30 @@ class LLMService:
         submission: str, 
         rubric: str, 
         findings: List[str],
-        missing: List[str] = None
+        missing: List[str] = None,
+        relevance_status: str = "UNCERTAIN"
     ) -> str:
         findings_str = "\n".join(f"- {f}" for f in findings)
         missing_str = ", ".join(missing) if missing else "None"
+
+        if relevance_status == "IRRELEVANT":
+            relevance_instructions = """
+1. Format your response into these exact sections:
+    **Summary**: Explicitly state that the submission solves a different problem or is completely irrelevant. Briefly mention what their code actually does. DO NOT try to force the required rubric concepts onto their unrelated code.
+    
+    **Corrections Needed**: Patiently and coolly explain WHY it is inaccurate or irrelevant. Tell the student exactly how they SHOULD approach the actual assigned problem conceptually instead of what they did.
+    
+    **Strengths**: Acknowledge any minor technical strengths (like using a loop or syntax), but keep it brief since the code evaluates as irrelevant.
+"""
+        else:
+            relevance_instructions = """
+1. Format your response into these exact sections:
+    **Summary**: [Brief 1-sentence explanation of what the code/content is trying to do]
+    
+    **Corrections Needed**: [A detailed paragraph explaining conceptual gaps. Behave like a patient, cool teacher. When pointing out issues like missing comments or structure, give precise examples of where and how they should write them. e.g., "you need to write comments right before your loops explaining X like this..."]
+    
+    **Strengths**: [1-3 concise lines highlighting what was done well]
+"""
         
         base_prompt = f"""
 You are a helpful Teaching Assistant explaining evaluation results.
@@ -124,18 +146,13 @@ Student Submission (for context):
 {submission[:4000]}
 
 MANDATORY INSTRUCTIONS:
-1. Format your response into these exact sections:
-    **Summary**: [Brief 1-sentence explanation of what the code/content is trying to do]
-    
-    **Corrections Needed**: [A detailed 5-line paragraph explaining conceptual gaps or missing elements]
-    
-    **Strengths**: [1-3 concise lines highlighting what was done well]
+{relevance_instructions}
 
 2. Explain logically WHY the findings lead to the evaluation result.
 3. Rewrite missing concepts as a semantic explanation.
 4. Keep feedback encouraging but technical.
-5. Start directly with the content (no "Here is...").
-6. Do NOT use headers like "##". Use bold keys like "**Summary**:".
+5. Start directly with the output content (no "Here is...").
+6. Do NOT use markdown headers like "##". Use bold keys exactly as provided (e.g., "**Summary**:").
 
 """
         return base_prompt
@@ -196,7 +213,7 @@ Verdict: [RELEVANT/PARTIAL/IRRELEVANT/UNCERTAIN]
         for attempt in range(max_retries):
             try:
                 # Use the configured model
-                client = genai.GenerativeModel(self.model_name or "gemini-pro")
+                client = genai.GenerativeModel(self.model_name or "gemini-2.0-flash")
                 response = client.generate_content(prompt)
                 
                 if not response.text:
@@ -228,3 +245,80 @@ Verdict: [RELEVANT/PARTIAL/IRRELEVANT/UNCERTAIN]
         
         # Fail-closed: If LLM fails, treat as uncertain (which will be handled conservatively)
         return "UNCERTAIN"
+
+    def parse_rubric_text(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Uses LLM to convert a plain text rubric description into the structured 
+        RubricConfig JSON dictionary format expected by the system.
+        """
+        if not self.enabled:
+            return None
+            
+        self._ensure_setup()
+        
+        rubric_schema = """
+        {
+            "name": "Custom Extracted Rubric",
+            "version": "1.0",
+            "dimensions": {
+                "code": {
+                    "weight": [float between 0 and 1],
+                    "max_score": 100,
+                    "criteria": {
+                        "criterion1": {"weight": [float], "max_score": 100}
+                    }
+                },
+                "content": {
+                    "weight": [float between 0 and 1],
+                    "max_score": 100,
+                    "criteria": {
+                        "criterion1": {"weight": [float], "max_score": 100}
+                    }
+                }
+            }
+        }
+        """
+        
+        prompt = f"""
+        You are an AI tasked with converting a plain text grading rubric into a strict JSON configuration.
+        
+        The output must strictly be a VALID JSON object matching this general structure:
+        {rubric_schema}
+        
+        Rules:
+        1. Analyze the text to find evaluation dimensions and their respective weights.
+        2. Sum of weights for all dimensions at the top level should ideally equal 1.0 (e.g. code: 0.6, content: 0.4).
+        3. Within each dimension, create a 'criteria' dictionary based on the text. The sum of criteria weights within a dimension should equal 1.0.
+        4. If a dimension is completely omitted from the text, omit it from the JSON. If the user only provides criteria without weights, assign equal weights.
+        5. Return ONLY the raw JSON string. Do not use Markdown formatting like ```json. Do not include any explanations.
+        
+        User Text to Parse:
+        {text}
+        """
+        
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                client = genai.GenerativeModel(self.model_name or "gemini-2.0-flash")
+                response = client.generate_content(prompt)
+                
+                if not response.text:
+                    continue
+                    
+                # Clean up any potential markdown formatting
+                json_str = response.text.strip()
+                if json_str.startswith("```json"):
+                    json_str = json_str[7:]
+                if json_str.startswith("```"):
+                    json_str = json_str[3:]
+                if json_str.endswith("```"):
+                    json_str = json_str[:-3]
+                    
+                json_str = json_str.strip()
+                parsed = json.loads(json_str)
+                return parsed
+            except Exception as e:
+                print(f"LLM Rubric Parsing failed: {e}")
+                continue
+                
+        return None

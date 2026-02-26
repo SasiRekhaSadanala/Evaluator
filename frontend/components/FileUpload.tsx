@@ -98,13 +98,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
     const formErrors: string[] = []
     if (files.length === 0) formErrors.push('Please upload at least one student submission')
 
-    if (rubricSource === 'text' && rubricText) {
-      try {
-        JSON.parse(rubricText)
-      } catch (err) {
-        formErrors.push('Invalid JSON in rubric text')
-      }
-    }
+    // Relaxed validation: let backend handle parsing text -> json if necessary
 
     if (formErrors.length > 0) {
       setErrors(formErrors)
@@ -323,7 +317,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                       : 'text-slate-400 hover:text-white'
                       }`}
                   >
-                    JSON
+                    Text/JSON
                   </button>
                   <button
                     type="button"
@@ -346,7 +340,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                       setRubricText(e.target.value)
                       setErrors((prev) => prev.filter((e) => !e.includes('rubric')))
                     }}
-                    placeholder={`{\n  "criteria": [\n    { "name": "Logic", "points": 10 }\n  ]\n}`}
+                    placeholder={`Paste text description of the rubric or JSON format...`}
                     className="w-full h-40 px-4 py-3 bg-slate-950/50 border border-slate-700 rounded-xl text-slate-300 placeholder-slate-500 font-mono text-xs focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none scrollbar-thin scrollbar-thumb-slate-700"
                   />
                 </div>
@@ -369,7 +363,7 @@ export default function FileUpload({ onSubmit, onFileChange, loading }: FileUplo
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
                       <span className="text-sm font-medium">
-                        {rubricFile ? rubricFile.name : 'Upload JSON Rubric'}
+                        {rubricFile ? rubricFile.name : 'Upload Rubric File'}
                       </span>
                     </button>
                     {rubricFile && (

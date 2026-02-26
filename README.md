@@ -9,6 +9,7 @@ A full-stack application (FastAPI + Next.js) that evaluates student code and con
 ## Key Features
 
 ### 🧠 Intelligent Evaluation
+- **Custom Rubrics**: Optionally provide grading rubrics in plain text! The LLM parses natural language criteria instantly.
 - **Code Analysis**:
   - **Python & C++ Support**: AST-based (Python) and Regex-based (C++) static analysis.
   - **Conditional Scoring**: "Approach-First" logic. If the code logic is irrelevant, structure/effort points are withheld.
@@ -29,7 +30,7 @@ A full-stack application (FastAPI + Next.js) that evaluates student code and con
 ### 💻 Modern Interface
 - **Next.js 14 Frontend**: Responsive, dark-mode UI with Tailwind CSS.
 - **Real-time Results**: Instant feedback with visual score bars.
-- **CSV Export**: One-click download of summary reports via secure API endpoints.
+- **CSV Export**: One-click download of summary reports via API endpoints.
 
 ## Architecture
 
@@ -57,8 +58,8 @@ Evaluator_v2/
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/SasiRekhaSadanala/Evaluator_v2.git
-    cd Evaluator_v2
+    git clone https://github.com/SasiRekhaSadanala/Evaluator.git
+    cd Evaluator
     ```
 
 2.  **Backend Setup**
@@ -84,7 +85,7 @@ Evaluator_v2/
     ```env
     LLM_ENABLED=true
     LLM_PROVIDER=gemini
-    LLM_MODEL=gemini-1.5-flash
+    LLM_MODEL=gemini-2.0-flash
     GEMINI_API_KEY=your_api_key_here
     ```
 
@@ -105,9 +106,10 @@ Evaluator_v2/
 
 ## Version History
 
-- **v2.0 (Jan 2026)**:
+- **v2.0 (Feb 2026)**:
     - Implemented Conditional Scoring (Anti-Inflation).
     - Added Content Plagiarism Check (Prompt Copy Prevention).
+    - Added Text-Based Custom Rubrics via LLM parsing.
     - Fixed CSV Download API.
     - Polished AI Feedback Text.
 - **v1.0**: Initial Release with basic agents.

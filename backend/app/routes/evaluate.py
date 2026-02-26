@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 
 from backend.app.schemas import EvaluationRequest, EvaluationResponse, RubricConfig
 from backend.app.services import EvaluatorService
+from utils.llm_service import LLMService
 
 router = APIRouter(prefix="/api", tags=["evaluation"])
 
@@ -42,9 +43,9 @@ def evaluate(
         None,
         description="Reference content for content assignments",
     ),
-    rubric_json: Optional[str] = Form(
+    rubric_content: Optional[str] = Form(
         None,
-        description="Custom rubric as JSON string (optional)",
+        description="Custom rubric as plain text or JSON string (optional)",
     ),
     files: List[UploadFile] = File(
         ...,
@@ -58,7 +59,7 @@ def evaluate(
     - **assignment_type**: Type of assignment (code, content, or mixed)
     - **problem_statement**: Problem description for code assignments
     - **ideal_reference**: Reference content for content assignments
-    - **rubric_json**: Custom rubric as JSON (optional, uses default if not provided)
+    - **rubric_content**: Custom rubric as text or JSON (optional, uses default if not provided)
     - **files**: Student submission files (.py, .cpp, .cc, .cxx, .h, .hpp, .txt, .pdf)
 
     Returns evaluation results with scores, feedback, and CSV export paths.
@@ -101,13 +102,25 @@ def evaluate(
 
         # Parse custom rubric if provided
         rubric = None
-        if rubric_json:
+        rubric_warning = None
+        if rubric_content:
             try:
-                rubric_dict = json.loads(rubric_json)
+                # Try strict JSON parsing first
+                rubric_dict = json.loads(rubric_content)
                 rubric = RubricConfig(**rubric_dict)
             except (json.JSONDecodeError, ValueError):
-                # Invalid JSON, proceed with default rubric
-                pass
+                # If not JSON or invalid JSON structure, treat as plain text and use LLM
+                print("Rubric JSON parse failed, attempting LLM parsing of text rubric...")
+                try:
+                    llm_service = LLMService()
+                    parsed_dict = llm_service.parse_rubric_text(rubric_content)
+                    if parsed_dict:
+                        rubric = RubricConfig(**parsed_dict)
+                    else:
+                        rubric_warning = "Failed to parse text rubric via LLM (returned None). Using default rubric."
+                except Exception as e:
+                    rubric_warning = f"Error during LLM rubric parsing: {e}. Using default rubric."
+                    print(rubric_warning)
 
         # Create evaluation request
         request = EvaluationRequest(
@@ -135,6 +148,9 @@ def evaluate(
         if response.csv_detailed_output_path:
             filename = Path(response.csv_detailed_output_path).name
             response.csv_detailed_output_path = f"{base_url}/{filename}"
+
+        if rubric_warning:
+            response.message += f" | Warning: {rubric_warning}"
 
         return response
 

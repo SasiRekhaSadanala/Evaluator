@@ -1,0 +1,9 @@
+warning: failed to remove git_clean_output.txt: Invalid argument
+Removing backend/app/services/execution_service.py
+Removing backend/app/services/linting_service.py
+Removing check_pydantic.py
+Removing docs/
+Removing frontend/src/
+Removing git_status_output.txt
+Removing repro_failure.py
+Removing requirements.txt
