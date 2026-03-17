@@ -47,8 +47,7 @@ class LLMService:
         rubric_context: str, 
         deterministic_findings: List[str],
         missing_concepts: List[str] = None,
-        relevance_status: str = "UNCERTAIN",
-        evaluation_mode: str = "EVALUATION"
+        relevance_status: str = "UNCERTAIN"
     ) -> List[str]:
         """
         Generate qualitative feedback based on deterministic findings.
@@ -59,8 +58,6 @@ class LLMService:
             rubric_context: Relevant parts of the rubric.
             deterministic_findings: List of strings like "Found 3 functions".
             missing_concepts: List of missing keywords to be explained semantically.
-            relevance_status: IRRELEVANT, PARTIAL, RELEVANT, UNCERTAIN.
-            evaluation_mode: "EVALUATION" (critique code) or "TEACHING" (explain correct problem).
 
         Returns:
             List of feedback strings. Returns empty list on failure or if disabled.
@@ -79,15 +76,7 @@ class LLMService:
         for model in models_to_try:
             try:
                 client = genai.GenerativeModel(model)
-                prompt = self._build_prompt(
-                    context_type, 
-                    submission_content, 
-                    rubric_context, 
-                    deterministic_findings, 
-                    missing_concepts, 
-                    relevance_status,
-                    evaluation_mode
-                )
+                prompt = self._build_prompt(context_type, submission_content, rubric_context, deterministic_findings, missing_concepts, relevance_status)
                 response = client.generate_content(prompt)
                 
                 if response.text:
@@ -111,19 +100,18 @@ class LLMService:
         rubric: str, 
         findings: List[str],
         missing: List[str] = None,
-        relevance_status: str = "UNCERTAIN",
-        evaluation_mode: str = "EVALUATION"
+        relevance_status: str = "UNCERTAIN"
     ) -> str:
         findings_str = "\n".join(f"- {f}" for f in findings)
         missing_str = ", ".join(missing) if missing else "None"
 
-        if evaluation_mode == "TEACHING" or relevance_status == "IRRELEVANT":
+        if relevance_status == "IRRELEVANT":
             relevance_instructions = """
 1. Format your response into these exact sections:
     **Summary**: State clearly that the submission is irrelevant to the assigned problem. Briefly mention what their code/text actually does (as context).
     
     **Corrections Needed**: 
-    - CRITICAL: DO NOT critique the student's code for style, comments, or naming. It is irrelevant.
+    - DO NOT critique the student's code for style, comments, or naming. It is irrelevant.
     - INSTEAD, provide a comprehensive "How to Solve the Assigned Problem" guide.
     - Include high-level Pseudo-code and logical steps for the ACTUAL assigned task.
     - Be a mentor: help them understand the problem they missed.
@@ -148,7 +136,6 @@ DO NOT change weights or grading criteria.
 DO NOT invent new criteria. Focus ONLY on the provided context.
 Only explain based on provided facts and findings.
 
-MODE: {evaluation_mode}
 Context: {context_type.upper()} Assignment
 Rubric/Criteria used:
 {rubric}

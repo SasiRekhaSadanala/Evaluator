@@ -1,34 +1,25 @@
 submission_id,final_score,max_score,feedback,assignment_type,file
 c1_Result,1.1,100,## AI Evaluator,code,c1.cpp
-c1_Result,1.1,100,**Summary**: This code aims to calculate the total sum of divisors for every **integer** in a given array that possesses **exactly** four divisors by utilizing prime factorization logic and specific divisor checks.,code,c1.cpp
-c1_Result,1.1,100,"**Corrections Needed**: To improve your approach, consider the **constraints** of the input **length** and the range of **each** **integer** **element** to ensure your logic remains **valid**. While you **assume** **that** a correct **answer** **exists**, your implementation must guarantee **exactly** four divisors are identified for the **numbers** without counting the **same** factor **twice**. You **would** benefit from adding comments to explain the **order** of operations, **because** it is difficult to understand how **such** specific **integers** and **indices** are evaluated against the **target** criteria. Clearer documentation is necessary to describe how these values **have** been filtered and why **they** **only** move forward if they meet the specific divisor requirements.",code,c1.cpp
+c1_Result,1.1,100,**Summary**: The code identifies and sums all divisors for every integer in a given list that possesses exactly four divisors by utilizing prime factorization and cubic root checks.,code,c1.cpp
+c1_Result,1.1,100,"**Corrections Needed**: While your logic is technically sound, your evaluation score was impacted by a lack of internal documentation, which is vital for readability. To fix this, you should add comments right before your loops to explain the mathematical logic you are applying. For example, you could write: ""Iterate through the **length** of the array to check if **each** **integer** **exists** as a **valid** **target** with **exactly** four divisors."" It is important to explain **that** you are verifying if the **numbers** are distinct primes **because** **they** **would** **only** result in a sum of four divisors if the factors are not the **same** (e.g., `k!=i`). You must **assume** the **constraints** of the problem require you to not count a divisor **twice**; adding a comment like ""Check if the cubic root is prime to ensure the **element** has exactly four divisors"" would clarify your intent. Additionally, describing the **order** of your checks helps ensure that your **answer** is logically connected to the specific **integers** and **indices** you are processing.",code,c1.cpp
 c1_Result,1.1,100,**Strengths**:,code,c1.cpp
-c1_Result,1.1,100,- Demonstrates strong effort through the use of 9 distinct control flow conditions and loops to manage complex mathematical logic.,code,c1.cpp
-c1_Result,1.1,100,"- Shows a well-structured approach by modularizing the primality check into a separate function, which aids in processing multiple integers efficiently.",code,c1.cpp
+c1_Result,1.1,100,"- Strong implementation of control flow, effectively using 9 conditions and loops to filter divisors.",code,c1.cpp
+c1_Result,1.1,100,- The `is_prime` helper function is well-structured and optimized for performance.,code,c1.cpp
+c1_Result,1.1,100,- Effective use of mathematical boundaries (like `i*i <= n`) to ensure the solution remains efficient.,code,c1.cpp
 c1_Result,1.1,100,,code,c1.cpp
-c1_Result,1.1,100,## Strengths,code,c1.cpp
-c1_Result,1.1,100,✓ Code includes control flow (9 conditions/loops).,code,c1.cpp
-c1_Result,1.1,100,## Areas for Improvement,code,c1.cpp
-c1_Result,1.1,100,→ Add comments to explain your logic.,code,c1.cpp
-c1_Result,1.1,100,"Irrelevant submission: Code does not address problem (Low match ratio: 4%, Found 1 keywords).",code,c1.cpp
-c1_Result,1.1,100,Line length is appropriate for readability.,code,c1.cpp
-c1_Result,1.1,100,Good modularization (3 functions/classes).,code,c1.cpp
-c1_Result,1.1,100,Substantial code submission (32 lines).,code,c1.cpp
-c1_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c1.cpp
-c2_Result,1.1,100,## Strengths,code,c2.cpp
-c2_Result,1.1,100,✓ Code includes control flow (2 conditions/loops).,code,c2.cpp
-c2_Result,1.1,100,## Areas for Improvement,code,c2.cpp
-c2_Result,1.1,100,→ Add comments to explain your logic.,code,c2.cpp
-c2_Result,1.1,100,"Irrelevant submission: Code does not address problem (Low match ratio: 0%, Found 0 keywords).",code,c2.cpp
-c2_Result,1.1,100,Line length is appropriate for readability.,code,c2.cpp
-c2_Result,1.1,100,Good modularization (1 functions/classes).,code,c2.cpp
-c2_Result,1.1,100,Substantial code submission (14 lines).,code,c2.cpp
-c2_Result,1.1,100,Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.,code,c2.cpp
-Two_sum_Result,73.5,100,## Strengths,code,Two_sum.cpp
-Two_sum_Result,73.5,100,✓ Code includes control flow (3 conditions/loops).,code,Two_sum.cpp
-Two_sum_Result,73.5,100,## Areas for Improvement,code,Two_sum.cpp
-Two_sum_Result,73.5,100,→ Add comments to explain your logic.,code,Two_sum.cpp
-Two_sum_Result,73.5,100,Code appears relevant based on keyword match (3 matches).,code,Two_sum.cpp
-Two_sum_Result,73.5,100,Line length is appropriate for readability.,code,Two_sum.cpp
-Two_sum_Result,73.5,100,Good modularization (1 functions/classes).,code,Two_sum.cpp
-Two_sum_Result,73.5,100,Substantial code submission (16 lines).,code,Two_sum.cpp
+c2_Result,1.1,100,## AI Evaluator,code,c2.cpp
+c2_Result,1.1,100,"**Summary**: The code implements a logic to increment a large integer represented as a vector of digits by one, effectively handling the carry-over process when digits are equal to nine.",code,c2.cpp
+c2_Result,1.1,100,"**Corrections Needed**: While your logic is technically sound, your evaluation in readability and approach is affected by a lack of internal documentation and conceptual framing. To improve your readability score, you need to write comments right before your loops explaining the digit traversal like this: `// Traverse the indices from the end to handle cases where the element is exactly nine.` You should also describe the **constraints** of the input, explaining **that** you **assume** the input **integers** are non-negative and **that** **they** **have** a **valid** format where **each** **element** is a single digit. It would be helpful to clarify how the **length** of the **nums** (digits) array might change and why the **order** of operations ensures you **only** modify the necessary **indices** without visiting them **twice**. Furthermore, explaining why **exactly** one **answer** **exists** and why the carry-over occurs **because** a digit is nine helps demonstrate a deeper understanding of the **target** logic. Adding these details would explain how the **structure** of the array represents the **same** value as a standard **integer** and why **such** a solution is efficient.",code,c2.cpp
+c2_Result,1.1,100,**Strengths**:,code,c2.cpp
+c2_Result,1.1,100,- Successfully implemented control flow using a `while` loop and conditional `if-else` logic to manage digit carries.,code,c2.cpp
+c2_Result,1.1,100,- The approach correctly handles the edge case where the vector must grow in size to accommodate a new leading digit.,code,c2.cpp
+c2_Result,1.1,100,- Code is concise and directly addresses the primary goal of the increment operation.,code,c2.cpp
+c2_Result,1.1,100,,code,c2.cpp
+Two_sum_Result,73.5,100,## AI Evaluator,code,Two_sum.cpp
+Two_sum_Result,73.5,100,**Summary**: The code implements a two-pass hash map approach to solve the Two Sum problem by storing array values and their indices to find two numbers that add up to a specific target.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,"**Corrections Needed**: While your implementation successfully uses control flow with three distinct logic points (loops and conditions), the primary area for improvement is in readability and documentation. You need to write comments right before your loops explaining your logic; for example, above your first loop, you could add: `// Store each integer and its corresponding index + 1 in the map for easy lookup.` Furthermore, your submission lacks a conceptual explanation of the problem **constraints**. When writing your solution, you must **assume** **that** **each** input **would** **have** **exactly** **only** one **valid** **answer**, and **that** **such** a solution always **exists**. It is important to document why you cannot use the **same** **element** **twice** to reach the target; you correctly implemented this with `mp[second] != i+1`, but explaining **because** the **indices** must be distinct helps clarify the **length** and scope of your search. By detailing how **they** (the **numbers**) interact within the map, you ensure the **answer** is understandable. Without these comments, the **structure** and readability of your code are less effective, even though your **integer** logic is sound. Adding a simple line like `// Ensure the second element is not the same as the first element` would bridge this gap.",code,Two_sum.cpp
+Two_sum_Result,73.5,100,**Strengths**:,code,Two_sum.cpp
+Two_sum_Result,73.5,100,*   Efficient use of an `unordered_map` to optimize the search process for the target complement.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,"*   Correct implementation of control flow, utilizing three conditions/loops to manage the data processing and result returning.",code,Two_sum.cpp
+Two_sum_Result,73.5,100,*   The approach successfully handles the logic of mapping values to indices to achieve a linear-style lookup.,code,Two_sum.cpp
+Two_sum_Result,73.5,100,,code,Two_sum.cpp

@@ -48,30 +48,21 @@ class ContentEvaluationAgent(EvaluationAgent):
             
             # Handle verdicts strictly
             if verdict == "IRRELEVANT":
-                if self.llm_service.enabled:
-                    llm_feedback = self.llm_service.generate_semantic_feedback(
-                        context_type="content",
-                        submission_content=student_content,
-                        rubric_context=(
-                            "The submission is irrelevant. "
-                            "Explain briefly what the text discusses, then explain the assigned topic in detail."
-                        ),
-                        deterministic_findings=[], # Zero deterministic noise
-                        missing_concepts=[],
-                        relevance_status="IRRELEVANT",
-                        evaluation_mode="TEACHING"
-                    )
-                    
-                    return {
-                        "score": 0,
-                        "max_score": 100,
-                        "feedback": [] if not llm_feedback else (["LLM Explanation:"] + llm_feedback)
-                    }
-                
+                feedback.append("⚠️ LLM determined content is irrelevant to the prompt. Score: 0.")
+                llm_feedback = self.llm_service.generate_semantic_feedback(
+                    context_type="content",
+                    submission_content=student_content,
+                    rubric_context=str(rubric),
+                    deterministic_findings=feedback,
+                    missing_concepts=[],
+                    relevance_status="IRRELEVANT"
+                )
+                if llm_feedback:
+                    feedback = ["LLM Explanation:"] + llm_feedback
                 return {
                     "score": 0,
                     "max_score": 100,
-                    "feedback": ["❌ Irrelevant submission. Content does not address the assigned topic."]
+                    "feedback": feedback
                 }
             elif verdict == "UNCERTAIN":
                 # feedback.append("⚠️ LLM could not determine relevance. Treating as irrelevant for safety. Score: 0.")
@@ -107,30 +98,22 @@ class ContentEvaluationAgent(EvaluationAgent):
         
         # Fallback Gate: If LLM is disabled or uncertain, and coverage is zero, fail
         if coverage_score == 0:
+            feedback.append("⚠️ Irrelevant submission: No key concepts from the prompt were found.")
             if self.llm_service.enabled:
                 llm_feedback = self.llm_service.generate_semantic_feedback(
                     context_type="content",
                     submission_content=student_content,
-                    rubric_context=(
-                        "The submission is irrelevant. "
-                        "Explain briefly what the text discusses, then explain the assigned topic in detail."
-                    ),
-                    deterministic_findings=[], # Zero deterministic noise
+                    rubric_context=str(rubric),
+                    deterministic_findings=feedback,
                     missing_concepts=getattr(self, "_last_missing_concepts", []),
-                    relevance_status="IRRELEVANT",
-                    evaluation_mode="TEACHING"
+                    relevance_status="IRRELEVANT"
                 )
-                
-                return {
-                    "score": 0,
-                    "max_score": 100,
-                    "feedback": [] if not llm_feedback else (["LLM Explanation:"] + llm_feedback)
-                }
-
+                if llm_feedback:
+                    feedback = ["LLM Explanation:"] + llm_feedback
             return {
                 "score": 0,
                 "max_score": 100,
-                "feedback": ["❌ Irrelevant submission. No key concepts found."]
+                "feedback": feedback
             }
 
         scores["coverage"] = coverage_score

@@ -66,37 +66,12 @@ class CodeEvaluationAgent(EvaluationAgent):
         )
         scores["approach"] = approach_score
 
-        # TRUE HARD IRRELEVANCE GATE
-        verdict = getattr(self, "_last_relevance_verdict", "UNCERTAIN")
-        if verdict == "IRRELEVANT" or approach_score == 0:
-            if self.llm_service.enabled:
-                llm_feedback = self.llm_service.generate_semantic_feedback(
-                    context_type="code",
-                    submission_content=student_code,
-                    rubric_context=(
-                        "The submission is irrelevant. "
-                        "Explain briefly what the code does, then explain how the assigned problem should be solved."
-                    ),
-                    deterministic_findings=[], # Zero deterministic noise
-                    missing_concepts=[],
-                    relevance_status="IRRELEVANT",
-                    evaluation_mode="TEACHING"
-                )
-
-                return {
-                    "score": 0,
-                    "max_score": 100,
-                    "feedback": [] if not llm_feedback else (["LLM Explanation:"] + llm_feedback)
-                }
-
-            return {
-                "score": 0,
-                "max_score": 100,
-                "feedback": ["❌ Irrelevant submission. This code does not attempt the assigned problem."]
-            }
-
+        # 1. Conditional Effort Rewarding (Fixing Grading Inflation)
+        # We evaluate approach first, then use it as a gate for other categories.
+        
         # Determine Relevance Multiplier
         # Natural Gate: Scale other rewards based on approach relevance
+        # If approach is high (>=60), we treat it as fully relevant for effort/structure
         if approach_score >= 60:
             relevance_multiplier = 1.0
         else:
@@ -171,7 +146,7 @@ class CodeEvaluationAgent(EvaluationAgent):
             
             # Handle verdicts strictly
             if llm_verdict == "IRRELEVANT":
-                # SILENT RETURN for Hard Gate
+                feedback.append("⚠️ LLM determined code is irrelevant to the problem. Score: 0.")
                 return 0
             elif llm_verdict == "PARTIAL":
                 feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
@@ -243,8 +218,7 @@ class CodeEvaluationAgent(EvaluationAgent):
                 msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
                 feedback.append(msg)
             else:
-                # SILENT RETURN for Hard Gate
-                self._last_relevance_verdict = "IRRELEVANT"
+                feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
                 return 0  # Fail-Closed: Irrelevant if not 25%+ match or <3 keywords
 
         return min(score, 100)
@@ -292,8 +266,7 @@ class CodeEvaluationAgent(EvaluationAgent):
                 msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
                 feedback.append(msg)
             else:
-                # SILENT RETURN for Hard Gate
-                self._last_relevance_verdict = "IRRELEVANT"
+                feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
                 return 0  # Irrelevant submission
 
         return min(score, 100)
