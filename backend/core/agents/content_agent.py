@@ -41,36 +41,13 @@ class ContentEvaluationAgent(EvaluationAgent):
         # Extract key concepts from rubric, reference, or problem statement
         key_concepts = self._extract_key_concepts(rubric, ideal_reference, problem_statement)
 
-        # Step 0: LLM-based Relevance Check (Primary Gate)
-        # verdict is a local variable — thread-safe, no instance state
-        verdict = "UNCERTAIN"
+        # Step 1: Combined LLM Call (Consolidated for Performance)
+        relevance_verdict = "UNCERTAIN"
+        llm_feedback = []
         if self.llm_service.enabled:
-            verdict = self.llm_service.check_relevance(problem_statement, student_content, "content")
-
-            # Handle verdicts strictly
-            if verdict == "IRRELEVANT":
-                feedback.append("⚠️ LLM determined content is irrelevant to the prompt. Score: 0.")
-                llm_feedback = self.llm_service.generate_semantic_feedback(
-                    context_type="content",
-                    submission_content=student_content,
-                    rubric_context=str(rubric),
-                    deterministic_findings=feedback,
-                    missing_concepts=[],
-                    relevance_status="IRRELEVANT"
-                )
-                if llm_feedback:
-                    feedback = ["LLM Explanation:"] + llm_feedback
-                return {
-                    "score": 0,
-                    "max_score": 100,
-                    "feedback": feedback
-                }
-            elif verdict == "UNCERTAIN":
-                pass  # Continue with evaluation using keyword fallback
-            elif verdict == "PARTIAL":
-                feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
-            elif verdict == "RELEVANT":
-                feedback.append("✓ LLM verified content is relevant to the prompt.")
+            # We don't have findings yet, but we can do the relevance check early or wait.
+            # Best for performance: Do the deterministic checks first, then 1 LLM call.
+            pass 
 
 
         # Heuristic: Check for prompt copying (plagiarism of question)
@@ -79,7 +56,6 @@ class ContentEvaluationAgent(EvaluationAgent):
             if similarity > 0.6:
                 feedback.append(f"⚠️ Content is too similar to the problem statement ({int(similarity*100)}% match). Score penalized.")
                 is_plagiarism = True
-                verdict = "IRRELEVANT"  # Override verdict locally for LLM feedback context
             else:
                 is_plagiarism = False
         else:
@@ -94,21 +70,26 @@ class ContentEvaluationAgent(EvaluationAgent):
         if coverage_score == 0:
             feedback.append("⚠️ Irrelevant submission: No key concepts from the prompt were found.")
             if self.llm_service.enabled:
-                llm_feedback = self.llm_service.generate_semantic_feedback(
+                relevance_verdict, llm_feedback = self.llm_service.get_full_evaluation(
                     context_type="content",
                     submission_content=student_content,
+                    problem_statement=problem_statement,
                     rubric_context=str(rubric),
                     deterministic_findings=feedback,
-                    missing_concepts=missing_concepts,
-                    relevance_status="IRRELEVANT"
+                    missing_concepts=missing_concepts
                 )
-                if llm_feedback:
-                    feedback = ["LLM Explanation:"] + llm_feedback
-            return {
-                "score": 0,
-                "max_score": 100,
-                "feedback": feedback
-            }
+                if relevance_verdict == "IRRELEVANT":
+                    return {
+                        "score": 0,
+                        "max_score": 100,
+                        "feedback": ["⚠️ LLM determined content is irrelevant."] + llm_feedback
+                    }
+            else:
+                return {
+                    "score": 0,
+                    "max_score": 100,
+                    "feedback": feedback
+                }
 
         scores["coverage"] = coverage_score
 
@@ -155,21 +136,22 @@ class ContentEvaluationAgent(EvaluationAgent):
              
         max_score = sum(weights.values()) * 100
 
-        # Integrate LLM Feedback — uses locally scoped vars (thread-safe, no self._last_* reads)
+        # Integrate LLM Feedback (Consolidated Call)
         if self.llm_service.enabled:
-            # Collect deterministic findings for context
-            findings = [f for f in feedback if f.startswith("✓") or f.startswith("→") or f.startswith("❌")]
-
-            llm_feedback = self.llm_service.generate_semantic_feedback(
+            findings = [f for f in feedback if any(f.startswith(c) for c in ["✓", "→", "❌"])]
+            relevance_verdict, llm_feedback = self.llm_service.get_full_evaluation(
                 context_type="content",
                 submission_content=student_content,
+                problem_statement=problem_statement,
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
-                missing_concepts=missing_concepts,
-                relevance_status=verdict
+                missing_concepts=missing_concepts
             )
 
-            if llm_feedback:
+            if relevance_verdict == "IRRELEVANT":
+                total_score = 0
+                feedback = ["⚠️ LLM determined content is irrelevant."] + llm_feedback
+            elif llm_feedback:
                 feedback = ["LLM Explanation:"] + llm_feedback
         
         return {

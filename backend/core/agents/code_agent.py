@@ -17,7 +17,8 @@ class CodeEvaluationAgent(EvaluationAgent):
             "string", "include", "std", "write", "example", "explanation", "leetcode",
             "implement", "given", "problem", "following", "int", "float", "double", 
             "bool", "void", "vector", "list", "map", "set", "array", "if", "for", 
-            "while", "const", "main", "args", "public", "private"
+            "while", "const", "main", "args", "public", "private", "result", "target",
+            "value", "node", "tree", "root", "using", "method", "class", "answer"
         }
     
     def _detect_language(self, code: str, filename: str = "") -> str:
@@ -89,86 +90,65 @@ class CodeEvaluationAgent(EvaluationAgent):
         readability_raw = self._evaluate_readability(student_code, readability_feedback, language)
         if not is_custom or "readability" in weights:
             feedback.extend(readability_feedback)
-            if approach_score == 0:
-                scores["readability"] = min(readability_raw, 10)
-            else:
-                scores["readability"] = readability_raw * relevance_multiplier
+            if approach_score == 0: scores["readability"] = min(readability_raw, 10)
+            else: scores["readability"] = readability_raw * relevance_multiplier
         
-        # Analyze structure - ONLY rewarded if relevant
+        # Structure & Effort
         structure_feedback = []
         structure_raw = self._evaluate_structure(student_code, structure_feedback, language)
         if not is_custom or "structure" in weights:
             feedback.extend(structure_feedback)
             scores["structure"] = structure_raw * relevance_multiplier
         
-        # Analyze visible effort - ONLY rewarded if relevant
         effort_feedback = []
         effort_raw = self._evaluate_effort(student_code, effort_feedback, language)
         if not is_custom or "effort" in weights:
             feedback.extend(effort_feedback)
             scores["effort"] = effort_raw * relevance_multiplier
 
-        if approach_score == 0:
-            feedback.append("Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.")
-
-        # Calculate total score
-        # Fallback weights match rubric.py DEFAULT_RUBRIC to avoid silent discrepancy
+        # TOTAL SCORE CALCULATION
         total_score = 0
-        max_score = sum(weights.values()) * 100  # Assume each category is out of 100
-
         for k, v in weights.items():
-            if k in scores:
-                total_score += scores[k] * v
-            else:
-                # If custom user criteria lacks deterministic mapper, bind to approach correctness
-                total_score += scores.get("approach", 0) * v
+            if k in scores: total_score += scores[k] * v
+            else: total_score += scores.get("approach", 0) * v
 
-        # Integrate LLM Feedback — uses locally scoped vars (thread-safe, no self._last_* reads)
+        # Step 2: Combined LLM Call (Consolidated for <30s Performance)
         if self.llm_service.enabled:
-            # Collect deterministic findings for context
-            findings = [f for f in feedback if f.startswith("✓") or f.startswith("→") or f.startswith("❌")]
-            
-            llm_feedback = self.llm_service.generate_semantic_feedback(
+            findings = [f for f in feedback if any(f.startswith(c) for c in ["✓", "→", "❌"])]
+            relevance_verdict, llm_feedback = self.llm_service.get_full_evaluation(
                 context_type="code",
                 submission_content=student_code,
+                problem_statement=problem_statement,
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
-                missing_concepts=missing_concepts,
-                relevance_status=relevance_verdict
+                missing_concepts=missing_concepts
             )
             
-            if llm_feedback:
+            # Recalculate approach if IRRELEVANT (Logic Gate)
+            if relevance_verdict == "IRRELEVANT":
+                scores["approach"] = 0
+                total_score = 0
+                feedback = ["⚠️ LLM determined code is irrelevant."] + llm_feedback
+            elif llm_feedback:
                 feedback = ["LLM Explanation:"] + llm_feedback
 
         return {
             "score": round(total_score, 2),
-            "max_score": max_score,
+            "max_score": sum(weights.values()) * 100,
             "feedback": feedback,
         }
 
     def _evaluate_approach(
-        self, code: str, problem: str, feedback: List[str], language: str = "python"
+        self, code: str, problem: str, feedback: List[str], language: str = "python", llm_verdict: str = None
     ) -> tuple:
-        """Evaluate if the approach addresses the problem.
-
-        Returns:
-            Tuple of (score: float, missing_concepts: list, verdict: str).
-            Thread-safe — no instance state mutation.
-        """
-        # Step 1: LLM-based Relevance Check (Primary Gate)
-        llm_verdict = "UNCERTAIN"
-        if self.llm_service.enabled:
-            llm_verdict = self.llm_service.check_relevance(problem, code, "code")
-
-            # Handle verdicts strictly
-            if llm_verdict == "IRRELEVANT":
-                feedback.append("⚠️ LLM determined code is irrelevant to the problem. Score: 0.")
-                return 0, [], "IRRELEVANT"
-            elif llm_verdict == "PARTIAL":
-                feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
-            elif llm_verdict == "RELEVANT":
-                feedback.append("✓ LLM verified submission is relevant to the problem.")
-            # UNCERTAIN: fall through to keyword analysis as fallback
+        """Evaluate if the approach addresses the problem."""
+        if llm_verdict is None:
+            llm_verdict = "UNCERTAIN"
+            if self.llm_service.enabled:
+                llm_verdict = self.llm_service.check_relevance(problem, code, "code")
+                if llm_verdict == "IRRELEVANT":
+                    feedback.append("⚠️ LLM determined code is irrelevant to the problem. Score: 0.")
+                    return 0, [], "IRRELEVANT"
 
         if language == "python":
             score, missing_concepts = self._evaluate_approach_python(code, problem, feedback, llm_verdict)
@@ -177,8 +157,6 @@ class CodeEvaluationAgent(EvaluationAgent):
 
         return score, missing_concepts, llm_verdict
 
-
-    
     def _evaluate_approach_python(
         self, code: str, problem: str, feedback: List[str], llm_verdict: str = None
     ) -> tuple:
@@ -337,20 +315,21 @@ class CodeEvaluationAgent(EvaluationAgent):
                 score += 40
                 feedback.append("Code uses variable assignments (structured logic).")
         else:  # C++
-            # Count functions and classes using regex
-            function_pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{'
+            # Improved C++ function pattern (handles templates, pointers, references, and const)
+            function_pattern = r'(?:[\w\d_<>:*&]+\s+)+[\w\d_]+\s*\([^)]*\)\s*(?:const)?\s*\{'
             functions = re.findall(function_pattern, code)
             
-            class_pattern = r'class\s+\w+'
+            # Count classes AND structs
+            class_pattern = r'\b(?:class|struct)\s+\w+'
             classes = re.findall(class_pattern, code)
             
             total_definitions = len(functions) + len(classes)
             
             if total_definitions > 0:
                 score += 60
-                feedback.append(f"Good modularization ({total_definitions} functions/classes).")
+                feedback.append(f"✓ Good modularization ({total_definitions} functions/classes/structs).")
             else:
-                feedback.append("→ Consider breaking code into functions for reusability.")
+                feedback.append("→ Consider breaking code into functions/classes for reusability.")
             
             # Check for namespace or header guards
             if 'namespace' in code or 'std::' in code or ('#ifndef' in code and '#define' in code):

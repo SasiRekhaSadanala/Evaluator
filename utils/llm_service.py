@@ -1,8 +1,9 @@
 import os
 import json
 import time
+import threading
 import google.generativeai as genai
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from dotenv import load_dotenv
 from cachetools import cached, TTLCache
 
@@ -21,26 +22,150 @@ class LLMService:
         self.model_name = os.getenv("LLM_MODEL", "gemini-2.0-flash")
         self._client = None
         self._setup_done = False
+        self._lock = threading.Lock()
 
     def _ensure_setup(self):
-        """Lazy initialization of the Gemini client."""
+        """Lazy initialization of the Gemini client with thread-safety."""
         if self._setup_done or not self.enabled:
             return
 
-        if not self.api_key:
-            print("WARNING: LLM_ENABLED is true but GEMINI_API_KEY is missing. Disabling LLM.")
-            self.enabled = False
-            return
+        with self._lock:
+            # Double-check inside lock
+            if self._setup_done:
+                return
 
-        try:
-            genai.configure(api_key=self.api_key)
-            # Use a default model first, can be overridden during generation
-            self._client = genai.GenerativeModel(self.model_name)
-            self._setup_done = True
-        except Exception as e:
-            print(f"WARNING: Failed to initialize Gemini: {e}. Disabling LLM.")
-            self.enabled = False
-            self._setup_done = True
+            if not self.api_key:
+                print("WARNING: LLM_ENABLED is true but GEMINI_API_KEY is missing. Disabling LLM.")
+                self.enabled = False
+                return
+
+            try:
+                genai.configure(api_key=self.api_key)
+                self._client = genai.GenerativeModel(self.model_name)
+                self._setup_done = True
+            except Exception as e:
+                print(f"WARNING: Failed to initialize Gemini: {e}. Disabling LLM.")
+                self.enabled = False
+                self._setup_done = True
+
+    def get_full_evaluation(
+        self,
+        context_type: str,
+        submission_content: str,
+        problem_statement: str,
+        rubric_context: str,
+        deterministic_findings: List[str],
+        missing_concepts: List[str] = None
+    ) -> Tuple[str, List[str]]:
+        """
+        PERFORMANCE OPTIMIZED: Fetches both Relevance Verdict and Feedback in ONE API hit.
+        Returns: Tuple of (verdict_str, feedback_lines_list)
+        """
+        missing_tuple = tuple(missing_concepts) if missing_concepts else ()
+        findings_tuple = tuple(deterministic_findings) if deterministic_findings else ()
+        
+        return self._cached_get_full_evaluation(
+            context_type, submission_content, problem_statement, rubric_context, findings_tuple, missing_tuple
+        )
+
+    @cached(cache=TTLCache(maxsize=1000, ttl=86400))
+    def _cached_get_full_evaluation(
+        self,
+        context_type: str,
+        submission_content: str,
+        problem_statement: str,
+        rubric_context: str,
+        deterministic_findings: tuple,
+        missing_concepts: tuple = ()
+    ) -> Tuple[str, List[str]]:
+        if not self.enabled:
+            return "UNCERTAIN", []
+
+        self._ensure_setup()
+        
+        prompt = self._build_combined_prompt(
+            context_type, submission_content, problem_statement, rubric_context, deterministic_findings, missing_concepts
+        )
+
+        models_to_try = [self.model_name, "gemini-2.0-flash", "gemini-flash-latest", "gemini-pro-latest"]
+        last_error = ""
+
+        for model in models_to_try:
+            try:
+                client = genai.GenerativeModel(model)
+                for try_num in range(3):
+                    try:
+                        response = client.generate_content(prompt)
+                        if response and response.text:
+                            return self._parse_combined_response(response.text)
+                        break
+                    except Exception as loop_err:
+                        last_error = str(loop_err)
+                        if "429" in last_error or "quota" in last_error.lower():
+                            time.sleep(2 ** try_num)
+                        else:
+                            raise loop_err
+                continue
+            except Exception as e:
+                last_error = str(e)
+                continue
+        
+        return "UNCERTAIN", []
+
+    def _build_combined_prompt(self, context_type, submission, problem, rubric, findings, missing) -> str:
+        findings_str = "\n".join(f"- {f}" for f in findings)
+        missing_str = ", ".join(missing) if missing else "None"
+        
+        return f"""
+You are an expert Teaching Assistant and Evaluator. 
+Your goal is to perform TWO tasks in ONE response for a {context_type} submission.
+
+TASK 1: RELEVANCE CHECK
+Determine if this submission genuinely attempts to solve the problem described.
+Verdicts: RELEVANT, PARTIAL, OR IRRELEVANT.
+
+TASK 2: SEMANTIC FEEDBACK
+Explain the evaluation result to the student logically. Focus ONLY on logic, mathematical constraints, and data structures as per the findings.
+
+CONTEXT:
+Problem Statement: {problem[:1000]}
+Rubric: {rubric}
+Automated Findings: {findings_str}
+Missing Concepts: {missing_str}
+Submission: {submission[:4000]}
+
+OUTPUT FORMAT (STRICT):
+VERDICT: [RELEVANT/PARTIAL/IRRELEVANT]
+REASONING: [1 sentence reasoning for verdict]
+
+**Summary**: [1 sentence explain what it does]
+**Corrections Needed**: [Detailed paragraph on logic gaps. NO styling/comment complaints unless findings mention them!]
+**Strengths**: [Highlight modularity or efficiency]
+
+MANDATORY RULES:
+- Start with VERDICT line.
+- Use the exact bold headers for feedback.
+- If IRRELEVANT, the Corrections section should explain the actual problem they missed.
+- DO NOT mention "Automated findings" directly, weave them into the explanation.
+"""
+
+    def _parse_combined_response(self, text: str) -> Tuple[str, List[str]]:
+        lines = text.strip().split("\n")
+        verdict = "RELEVANT"
+        feedback_lines = []
+        
+        for line in lines:
+            upper_line = line.upper().strip()
+            if upper_line.startswith("VERDICT:"):
+                if "IRRELEVANT" in upper_line: verdict = "IRRELEVANT"
+                elif "PARTIAL" in upper_line: verdict = "PARTIAL"
+                else: verdict = "RELEVANT"
+            elif upper_line.startswith("REASONING:"):
+                continue # Skip reasoning line for student feedback
+            elif line.strip():
+                feedback_lines.append(line.strip())
+        
+        return verdict, feedback_lines
 
     def generate_semantic_feedback(
         self, 
