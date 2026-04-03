@@ -99,15 +99,10 @@ class Rubric:
         if not isinstance(dimensions, dict):
             raise ValueError("'dimensions' must be a dictionary")
 
-        # Validate required dimensions
-        required_dimensions = {"code", "content"}
-        found_dimensions = set(dimensions.keys())
-
-        if not required_dimensions.issubset(found_dimensions):
-            missing = required_dimensions - found_dimensions
-            raise ValueError(
-                f"Rubric missing required dimensions: {missing}"
-            )
+        # Allow partial rubrics (e.g. code-only or content-only assignments)
+        # Only enforce that at least one dimension is defined
+        if not dimensions:
+            raise ValueError("Rubric 'dimensions' must contain at least one dimension")
 
         # Validate each dimension
         total_weight = 0

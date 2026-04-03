@@ -60,8 +60,8 @@ class CodeEvaluationAgent(EvaluationAgent):
         feedback = []
         scores = {}
 
-        # Analyze approach relevance
-        approach_score = self._evaluate_approach(
+        # Analyze approach relevance — unpacks (score, missing_concepts, verdict) for thread safety
+        approach_score, missing_concepts, relevance_verdict = self._evaluate_approach(
             student_code, problem_statement, feedback, language
         )
         scores["approach"] = approach_score
@@ -97,21 +97,19 @@ class CodeEvaluationAgent(EvaluationAgent):
             feedback.append("Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.")
 
         # Calculate total score
+        # Fallback weights match rubric.py DEFAULT_RUBRIC to avoid silent discrepancy
         weights = rubric.get("weights", {
-            "approach": 0.4,
-            "readability": 0.2,
-            "structure": 0.2,
-            "effort": 0.2,
+            "approach": 0.5,
+            "readability": 0.1,
+            "structure": 0.1,
+            "effort": 0.3,
         })
 
         total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
         max_score = sum(weights.values()) * 100  # Assume each category is out of 100
 
-        # Integrate LLM Feedback (Step 2, 4, 5)
+        # Integrate LLM Feedback — uses locally scoped vars (thread-safe, no self._last_* reads)
         if self.llm_service.enabled:
-            # Collect missing concepts for semantic explanation (Step 4)
-            missing_concepts = getattr(self, "_last_missing_concepts", [])
-            
             # Collect deterministic findings for context
             findings = [f for f in feedback if f.startswith("✓") or f.startswith("→") or f.startswith("❌")]
             
@@ -121,7 +119,7 @@ class CodeEvaluationAgent(EvaluationAgent):
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
                 missing_concepts=missing_concepts,
-                relevance_status=getattr(self, "_last_relevance_verdict", "UNCERTAIN")
+                relevance_status=relevance_verdict
             )
             
             if llm_feedback:
@@ -135,141 +133,130 @@ class CodeEvaluationAgent(EvaluationAgent):
 
     def _evaluate_approach(
         self, code: str, problem: str, feedback: List[str], language: str = "python"
-    ) -> float:
-        """Evaluate if the approach addresses the problem."""
-        
+    ) -> tuple:
+        """Evaluate if the approach addresses the problem.
+
+        Returns:
+            Tuple of (score: float, missing_concepts: list, verdict: str).
+            Thread-safe — no instance state mutation.
+        """
         # Step 1: LLM-based Relevance Check (Primary Gate)
-        llm_verdict = None
+        llm_verdict = "UNCERTAIN"
         if self.llm_service.enabled:
             llm_verdict = self.llm_service.check_relevance(problem, code, "code")
-            self._last_relevance_verdict = llm_verdict
-            
+
             # Handle verdicts strictly
             if llm_verdict == "IRRELEVANT":
                 feedback.append("⚠️ LLM determined code is irrelevant to the problem. Score: 0.")
-                return 0
+                return 0, [], "IRRELEVANT"
             elif llm_verdict == "PARTIAL":
                 feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
-                # Continue to keyword check but cap the score
             elif llm_verdict == "RELEVANT":
                 feedback.append("✓ LLM verified submission is relevant to the problem.")
-                # Continue to keyword check for final scoring
-            elif llm_verdict == "UNCERTAIN":
-                # feedback.append("⚠️ LLM could not determine relevance. Falling back to keyword analysis.")
-                pass
-                # Continue to keyword check as fallback
-
-        score = 0  # Base score removed via previous fix, keeping it 0 here.
+            # UNCERTAIN: fall through to keyword analysis as fallback
 
         if language == "python":
-            return self._evaluate_approach_python(code, problem, feedback, llm_verdict)
+            score, missing_concepts = self._evaluate_approach_python(code, problem, feedback, llm_verdict)
         else:  # C++
-            return self._evaluate_approach_cpp(code, problem, feedback, llm_verdict)
+            score, missing_concepts = self._evaluate_approach_cpp(code, problem, feedback, llm_verdict)
+
+        return score, missing_concepts, llm_verdict
 
 
     
     def _evaluate_approach_python(
         self, code: str, problem: str, feedback: List[str], llm_verdict: str = None
-    ) -> float:
-        """Evaluate Python code approach using AST."""
+    ) -> tuple:
+        """Evaluate Python code approach using AST.
+
+        Returns:
+            Tuple of (score: float, missing_keywords: list).
+        """
         score = 0
 
         try:
             tree = ast.parse(code)
         except SyntaxError:
             feedback.append("Code has syntax errors. Review and fix them.")
-            return 0
+            return 0, []
 
         # Simple keyword matching for problem relevance (Fallback/Heuristic)
         problem_keywords = [w for w in set(re.findall(r'\b\w{4,}\b', problem.lower())) if w not in self.STOP_WORDS]
-        
+
         code_lower = code.lower()
-        
+
         covered_keywords = [w for w in problem_keywords if w in code_lower]
         missing_keywords = [w for w in problem_keywords if w not in code_lower]
-        
-        # Store for LLM use
-        self._last_missing_concepts = missing_keywords
-        
-        keyword_matches = len(covered_keywords)
 
-        # Strict Threshold Calculation
-        total_keywords = len(problem_keywords)
-        match_ratio = len(covered_keywords) / total_keywords if total_keywords > 0 else 0
+        match_ratio = len(covered_keywords) / len(problem_keywords) if problem_keywords else 0
 
         # LLM-based scoring (if LLM gave a verdict)
         if llm_verdict in ["RELEVANT", "PARTIAL"]:
-             # LLM confirmed relevance, use keyword match to refine score
-             if match_ratio >= 0.3 or len(covered_keywords) >= 3:
-                 score = 100 if llm_verdict == "RELEVANT" else 80
-                 feedback.append(f"Relevant approach with good keyword alignment.")
-             elif match_ratio >= 0.15:
-                 score = 90 if llm_verdict == "RELEVANT" else 60
-                 feedback.append(f"Relevant approach (LLM verified).")
-             else:
-                 score = 80 if llm_verdict == "RELEVANT" else 30
+            # LLM confirmed relevance, use keyword match to refine score
+            if match_ratio >= 0.3 or len(covered_keywords) >= 3:
+                score = 100 if llm_verdict == "RELEVANT" else 80
+                feedback.append("Relevant approach with good keyword alignment.")
+            elif match_ratio >= 0.15:
+                score = 90 if llm_verdict == "RELEVANT" else 60
+                feedback.append("Relevant approach (LLM verified).")
+            else:
+                score = 80 if llm_verdict == "RELEVANT" else 30
+                feedback.append("LLM verified relevance, but keyword match is minimal.")
 
-                 feedback.append("LLM verified relevance, but keyword match is minimal.")
-        
         # Fallback (LLM disabled, uncertain, or failed) - BE STRICT
         else:
             if match_ratio >= 0.25 or len(covered_keywords) >= 2:
                 score = 75
-                msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
-                feedback.append(msg)
+                feedback.append(f"Code appears relevant based on keyword match ({len(covered_keywords)} matches).")
             else:
                 feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
-                return 0  # Fail-Closed: Irrelevant if not 25%+ match or <3 keywords
+                return 0, missing_keywords  # Fail-Closed
 
-        return min(score, 100)
+        return min(score, 100), missing_keywords
 
     
     def _evaluate_approach_cpp(
         self, code: str, problem: str, feedback: List[str], llm_verdict: str = None
-    ) -> float:
-        """Evaluate C++ code approach using regex patterns."""
+    ) -> tuple:
+        """Evaluate C++ code approach using regex patterns.
+
+        Returns:
+            Tuple of (score: float, missing_keywords: list).
+        """
         score = 0
 
         # Simple keyword matching for problem relevance (Fallback/Heuristic)
         problem_keywords = [w for w in set(re.findall(r'\b\w{4,}\b', problem.lower())) if w not in self.STOP_WORDS]
 
         code_lower = code.lower()
-        
+
         covered_keywords = [w for w in problem_keywords if w in code_lower]
         missing_keywords = [w for w in problem_keywords if w not in code_lower]
-        
-        # Store for LLM use
-        self._last_missing_concepts = missing_keywords
-        
-        keyword_matches = len(covered_keywords)
 
-        # Strict Threshold Calculation
-        total_keywords = len(problem_keywords)
-        match_ratio = len(covered_keywords) / total_keywords if total_keywords > 0 else 0
+        match_ratio = len(covered_keywords) / len(problem_keywords) if problem_keywords else 0
 
         # LLM-based scoring (if LLM gave a verdict)
         if llm_verdict in ["RELEVANT", "PARTIAL"]:
-             # LLM confirmed relevance, use keyword match to refine score
-             if match_ratio >= 0.3 or len(covered_keywords) >= 3:
-                 score = 100 if llm_verdict == "RELEVANT" else 80
-                 feedback.append(f"Relevant approach with good keyword alignment.")
-             elif match_ratio >= 0.15:
-                 score = 90 if llm_verdict == "RELEVANT" else 60
-                 feedback.append(f"Relevant approach (LLM verified).")
-             else:
-                 score = 80 if llm_verdict == "RELEVANT" else 30
-                 feedback.append("LLM verified relevance, but keyword match is minimal.")
+            # LLM confirmed relevance, use keyword match to refine score
+            if match_ratio >= 0.3 or len(covered_keywords) >= 3:
+                score = 100 if llm_verdict == "RELEVANT" else 80
+                feedback.append("Relevant approach with good keyword alignment.")
+            elif match_ratio >= 0.15:
+                score = 90 if llm_verdict == "RELEVANT" else 60
+                feedback.append("Relevant approach (LLM verified).")
+            else:
+                score = 80 if llm_verdict == "RELEVANT" else 30
+                feedback.append("LLM verified relevance, but keyword match is minimal.")
         else:
             # Fallback (LLM disabled, uncertain, or failed) - Strict
             if match_ratio >= 0.25 or len(covered_keywords) >= 2:
                 score = 75
-                msg = f"Code appears relevant based on keyword match ({len(covered_keywords)} matches)."
-                feedback.append(msg)
+                feedback.append(f"Code appears relevant based on keyword match ({len(covered_keywords)} matches).")
             else:
                 feedback.append(f"Irrelevant submission: Code does not address problem (Low match ratio: {int(match_ratio*100)}%, Found {len(covered_keywords)} keywords).")
-                return 0  # Irrelevant submission
+                return 0, missing_keywords  # Irrelevant submission
 
-        return min(score, 100)
+        return min(score, 100), missing_keywords
 
 
     def _evaluate_readability(self, code: str, feedback: List[str], language: str = "python") -> float:

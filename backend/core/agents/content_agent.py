@@ -42,10 +42,11 @@ class ContentEvaluationAgent(EvaluationAgent):
         key_concepts = self._extract_key_concepts(rubric, ideal_reference, problem_statement)
 
         # Step 0: LLM-based Relevance Check (Primary Gate)
+        # verdict is a local variable — thread-safe, no instance state
+        verdict = "UNCERTAIN"
         if self.llm_service.enabled:
             verdict = self.llm_service.check_relevance(problem_statement, student_content, "content")
-            self._last_relevance_verdict = verdict
-            
+
             # Handle verdicts strictly
             if verdict == "IRRELEVANT":
                 feedback.append("⚠️ LLM determined content is irrelevant to the prompt. Score: 0.")
@@ -65,37 +66,30 @@ class ContentEvaluationAgent(EvaluationAgent):
                     "feedback": feedback
                 }
             elif verdict == "UNCERTAIN":
-                # feedback.append("⚠️ LLM could not determine relevance. Treating as irrelevant for safety. Score: 0.")
-                pass
-                # Continue with evaluation using keyword fallback
+                pass  # Continue with evaluation using keyword fallback
             elif verdict == "PARTIAL":
                 feedback.append("⚠️ LLM found partial relevance. Proceeding with reduced scoring.")
-                # Continue with evaluation but note the partial status
             elif verdict == "RELEVANT":
                 feedback.append("✓ LLM verified content is relevant to the prompt.")
-                # Continue with full evaluation
 
 
         # Heuristic: Check for prompt copying (plagiarism of question)
-        # If strict LLM relevance failed (UNCERTAIN) or is disabled, we must ensure 
-        # the student didn't just copy the prompt to cheat keyword detection.
         if problem_statement and len(student_content) > 0:
             similarity = difflib.SequenceMatcher(None, problem_statement, student_content).ratio()
-            # If > 60% similarity, likely just the prompt
             if similarity > 0.6:
                 feedback.append(f"⚠️ Content is too similar to the problem statement ({int(similarity*100)}% match). Score penalized.")
                 is_plagiarism = True
-                self._last_relevance_verdict = "IRRELEVANT"
+                verdict = "IRRELEVANT"  # Override verdict locally for LLM feedback context
             else:
                 is_plagiarism = False
         else:
             is_plagiarism = False
         
-        # Analyze concept coverage
-        coverage_score = self._evaluate_concept_coverage(
+        # Analyze concept coverage — returns (score, missing_concepts) tuple (thread-safe)
+        coverage_score, missing_concepts = self._evaluate_concept_coverage(
             student_content, key_concepts, feedback
         )
-        
+
         # Fallback Gate: If LLM is disabled or uncertain, and coverage is zero, fail
         if coverage_score == 0:
             feedback.append("⚠️ Irrelevant submission: No key concepts from the prompt were found.")
@@ -105,7 +99,7 @@ class ContentEvaluationAgent(EvaluationAgent):
                     submission_content=student_content,
                     rubric_context=str(rubric),
                     deterministic_findings=feedback,
-                    missing_concepts=getattr(self, "_last_missing_concepts", []),
+                    missing_concepts=missing_concepts,
                     relevance_status="IRRELEVANT"
                 )
                 if llm_feedback:
@@ -148,23 +142,20 @@ class ContentEvaluationAgent(EvaluationAgent):
              
         max_score = sum(weights.values()) * 100
 
-        # Integrate LLM Feedback (Step 2, 4, 5)
+        # Integrate LLM Feedback — uses locally scoped vars (thread-safe, no self._last_* reads)
         if self.llm_service.enabled:
-            # Collect missing concepts for semantic explanation (Step 4)
-            missing_concepts = getattr(self, "_last_missing_concepts", [])
-            
             # Collect deterministic findings for context
             findings = [f for f in feedback if f.startswith("✓") or f.startswith("→") or f.startswith("❌")]
-            
+
             llm_feedback = self.llm_service.generate_semantic_feedback(
                 context_type="content",
                 submission_content=student_content,
                 rubric_context=str(rubric),
                 deterministic_findings=findings,
                 missing_concepts=missing_concepts,
-                relevance_status=getattr(self, "_last_relevance_verdict", "UNCERTAIN")
+                relevance_status=verdict
             )
-            
+
             if llm_feedback:
                 feedback = ["LLM Explanation:"] + llm_feedback
         
@@ -258,13 +249,17 @@ class ContentEvaluationAgent(EvaluationAgent):
 
     def _evaluate_concept_coverage(
         self, content: str, key_concepts: List[str], feedback: List[str]
-    ) -> float:
-        """Evaluate coverage of key concepts."""
+    ) -> tuple:
+        """Evaluate coverage of key concepts.
+
+        Returns:
+            Tuple of (score: float, missing_concepts: list). Thread-safe.
+        """
         score = 0
 
         if not key_concepts:
             feedback.append("ℹ No key concepts specified for comparison.")
-            return 60
+            return 60, []
 
         content_lower = content.lower()
         covered_concepts = [
@@ -275,10 +270,7 @@ class ContentEvaluationAgent(EvaluationAgent):
             c for c in key_concepts
             if isinstance(c, str) and c.lower() not in content_lower
         ]
-        
-        # Store for LLM use
-        self._last_missing_concepts = missing_concepts
-        
+
         coverage_percent = (len(covered_concepts) / len(key_concepts)) * 100 if key_concepts else 0
 
         if coverage_percent >= 80:
@@ -303,8 +295,8 @@ class ContentEvaluationAgent(EvaluationAgent):
             if not self.llm_service.enabled:
                 feedback.append(f"→ Missing key concepts: {', '.join(missing_concepts[:7])}")
         elif coverage_percent >= 20:
-             score = 20
-             feedback.append(f"→ Low coverage ({len(covered_concepts)}/{len(key_concepts)} concepts).")
+            score = 20
+            feedback.append(f"→ Low coverage ({len(covered_concepts)}/{len(key_concepts)} concepts).")
         else:
             score = 0
             feedback.append(
@@ -313,7 +305,7 @@ class ContentEvaluationAgent(EvaluationAgent):
             if not self.llm_service.enabled:
                 feedback.append(f"❌ Missing critical concepts: {', '.join(missing_concepts[:10])}")
 
-        return min(score, 100)
+        return min(score, 100), missing_concepts
 
     def _evaluate_alignment(
         self, content: str, rubric: dict, feedback: List[str]

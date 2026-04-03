@@ -1,6 +1,7 @@
 """Evaluation routes for the API."""
 
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -77,8 +78,8 @@ def evaluate(
     response = requests.post("http://localhost:8000/api/evaluate", files=files, data=data)
     ```
     """
-    # Validate file types
-    ALLOWED_EXTENSIONS = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt", ".pdf"}
+    # Validate file types (.pdf excluded — no text extraction is implemented; would produce garbage scores)
+    ALLOWED_EXTENSIONS = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt"}
     for file in files:
         ext = "." + file.filename.lower().split(".")[-1] if "." in file.filename else ""
         if ext not in ALLOWED_EXTENSIONS:
@@ -139,7 +140,8 @@ def evaluate(
         # Assuming frontend is on same host/port for relative links, or construct full URL
         # For simplicity, we'll return full URLs assuming localhost:8000 for now, 
         # but in prod this should be dynamic.
-        base_url = "http://localhost:8000/api/download"
+        # Build base URL from env so this works in staging/production, not just localhost
+        base_url = os.getenv("API_BASE_URL", "http://localhost:8000") + "/api/download"
         
         if response.csv_output_path:
             filename = Path(response.csv_output_path).name
