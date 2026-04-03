@@ -154,7 +154,7 @@ class LLMService:
 1. Format your response into these exact sections:
     **Summary**: [Brief 1-sentence explanation of what the code/content is trying to do]
     
-    **Corrections Needed**: [A detailed paragraph explaining conceptual gaps. Behave like a patient, cool teacher. When pointing out issues like missing comments or structure, give precise examples of where and how they should write them. e.g., "you need to write comments right before your loops explaining X like this..."]
+    **Corrections Needed**: [A detailed paragraph explaining conceptual gaps. Behave like a patient mentor. Give precise examples of how they should improve their underlying logic. Explain why certain algorithmic constraints matter.]
     
     **Strengths**: [1-3 concise lines highlighting what was done well]
 """
