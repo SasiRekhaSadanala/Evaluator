@@ -154,9 +154,11 @@ class LLMService:
 1. Format your response into these exact sections:
     **Summary**: [Brief 1-sentence explanation of what the code/content is trying to do]
     
-    **Corrections Needed**: [A detailed paragraph explaining conceptual gaps. Behave like a patient mentor. Give precise examples of how they should improve their underlying logic. Explain why certain algorithmic constraints matter.]
+    **Corrections Needed**: [A detailed paragraph explaining conceptual gaps. Behave like a patient mentor. Give precise examples of how they should improve their underlying logic.]
     
     **Strengths**: [1-3 concise lines highlighting what was done well]
+
+CRITICAL AI RULE: If the "Automated Findings" do not explicitly complain about a lack of comments or documentation, you MUST NEVER mention comments, documentation, styling, or variable naming anywhere in your feedback. Focus 100% on algorithm flow, mathematical constraints, and data-structures!
 """
         
         base_prompt = f"""
@@ -183,8 +185,8 @@ Student Submission (for context):
 MANDATORY INSTRUCTIONS:
 {relevance_instructions}
 
-2. Explain logically WHY the findings lead to the evaluation result.
-3. Rewrite missing concepts as a semantic explanation.
+2. Explain logically WHY the given findings lead to the evaluation result.
+3. If 'Missing Concepts' are provided, gently suggest they consider those domain terms if they apply, but DO NOT artificially force them into sentences.
 4. Keep feedback encouraging but technical.
 5. Start directly with the output content (no "Here is...").
 6. Do NOT use markdown headers like "##". Use bold keys exactly as provided (e.g., "**Summary**:").
