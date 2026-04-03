@@ -112,30 +112,43 @@ class ContentEvaluationAgent(EvaluationAgent):
 
         scores["coverage"] = coverage_score
 
+        is_custom = "weights" in rubric
+        weights = rubric.get("weights", {
+            "coverage": 0.60,      # Task-specific concepts are most important
+            "alignment": 0.25,     # Alignment with requirements
+            "flow": 0.08,          # Writing style is secondary
+            "completeness": 0.07,  # Detail level
+        })
+
         # Analyze alignment with requirements
-        alignment_score = self._evaluate_alignment(
-            student_content, rubric, feedback
-        )
-        scores["alignment"] = alignment_score
+        alignment_feedback = []
+        alignment_score = self._evaluate_alignment(student_content, rubric, alignment_feedback)
+        if not is_custom or "alignment" in weights:
+            feedback.extend(alignment_feedback)
+            scores["alignment"] = alignment_score
 
         # Analyze logical flow
-        flow_score = self._evaluate_logical_flow(student_content, feedback)
-        scores["flow"] = flow_score
+        flow_feedback = []
+        flow_score = self._evaluate_logical_flow(student_content, flow_feedback)
+        if not is_custom or "flow" in weights:
+            feedback.extend(flow_feedback)
+            scores["flow"] = flow_score
 
         # Analyze completeness
-        completeness_score = self._evaluate_completeness(student_content, feedback)
-        scores["completeness"] = completeness_score
+        completeness_feedback = []
+        completeness_score = self._evaluate_completeness(student_content, completeness_feedback)
+        if not is_custom or "completeness" in weights:
+            feedback.extend(completeness_feedback)
+            scores["completeness"] = completeness_score
 
-        # Calculate total score with weights (prioritize concept coverage heavily)
-        weights = {
-            "coverage": 0.60,      # Increased: task-specific concepts are most important
-            "alignment": 0.25,     # Alignment with requirements
-            "flow": 0.08,          # Decreased: writing style is secondary
-            "completeness": 0.07,  # Decreased: writing style is secondary
-        }
+        # Calculate total score with weights
+        total_score = 0
+        for k, v in weights.items():
+            if k in scores:
+                total_score += scores[k] * v
+            else:
+                total_score += scores.get("coverage", 0) * v
 
-        total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
-        
         # Cap score if plagiarism detected
         if is_plagiarism:
              total_score = min(total_score, 20)

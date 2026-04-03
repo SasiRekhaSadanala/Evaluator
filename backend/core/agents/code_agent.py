@@ -76,28 +76,7 @@ class CodeEvaluationAgent(EvaluationAgent):
             relevance_multiplier = 1.0
         else:
             relevance_multiplier = approach_score / 60.0
-        
-        # Analyze readability
-        readability_raw = self._evaluate_readability(student_code, feedback, language)
-        # Readability gets minimal credit (capped at 10%) if irrelevant, otherwise scaled by relevance
-        if approach_score == 0:
-            scores["readability"] = min(readability_raw, 10)
-        else:
-            scores["readability"] = readability_raw * relevance_multiplier
-        
-        # Analyze structure - ONLY rewarded if relevant
-        structure_raw = self._evaluate_structure(student_code, feedback, language)
-        scores["structure"] = structure_raw * relevance_multiplier
-        
-        # Analyze visible effort - ONLY rewarded if relevant
-        effort_raw = self._evaluate_effort(student_code, feedback, language)
-        scores["effort"] = effort_raw * relevance_multiplier
-
-        if approach_score == 0:
-            feedback.append("Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.")
-
-        # Calculate total score
-        # Fallback weights match rubric.py DEFAULT_RUBRIC to avoid silent discrepancy
+        is_custom = "weights" in rubric
         weights = rubric.get("weights", {
             "approach": 0.5,
             "readability": 0.1,
@@ -105,8 +84,44 @@ class CodeEvaluationAgent(EvaluationAgent):
             "effort": 0.3,
         })
 
-        total_score = sum(scores.get(k, 0) * v for k, v in weights.items())
+        # Analyze readability
+        readability_feedback = []
+        readability_raw = self._evaluate_readability(student_code, readability_feedback, language)
+        if not is_custom or "readability" in weights:
+            feedback.extend(readability_feedback)
+            if approach_score == 0:
+                scores["readability"] = min(readability_raw, 10)
+            else:
+                scores["readability"] = readability_raw * relevance_multiplier
+        
+        # Analyze structure - ONLY rewarded if relevant
+        structure_feedback = []
+        structure_raw = self._evaluate_structure(student_code, structure_feedback, language)
+        if not is_custom or "structure" in weights:
+            feedback.extend(structure_feedback)
+            scores["structure"] = structure_raw * relevance_multiplier
+        
+        # Analyze visible effort - ONLY rewarded if relevant
+        effort_feedback = []
+        effort_raw = self._evaluate_effort(student_code, effort_feedback, language)
+        if not is_custom or "effort" in weights:
+            feedback.extend(effort_feedback)
+            scores["effort"] = effort_raw * relevance_multiplier
+
+        if approach_score == 0:
+            feedback.append("Evaluation Note: Non-relevant submission. Effort and structure rewards are withheld.")
+
+        # Calculate total score
+        # Fallback weights match rubric.py DEFAULT_RUBRIC to avoid silent discrepancy
+        total_score = 0
         max_score = sum(weights.values()) * 100  # Assume each category is out of 100
+
+        for k, v in weights.items():
+            if k in scores:
+                total_score += scores[k] * v
+            else:
+                # If custom user criteria lacks deterministic mapper, bind to approach correctness
+                total_score += scores.get("approach", 0) * v
 
         # Integrate LLM Feedback — uses locally scoped vars (thread-safe, no self._last_* reads)
         if self.llm_service.enabled:
