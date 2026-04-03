@@ -78,8 +78,10 @@ def evaluate(
     response = requests.post("http://localhost:8000/api/evaluate", files=files, data=data)
     ```
     """
-    # Validate file types (.pdf excluded — no text extraction is implemented; would produce garbage scores)
-    ALLOWED_EXTENSIONS = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt"}
+    # Validate file types
+    ALLOWED_EXTENSIONS = {".py", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".txt", ".pdf"}
+    MAX_FILE_SIZE = 2 * 1024 * 1024  # 2 MB limit for text/code/pdfs
+
     for file in files:
         ext = "." + file.filename.lower().split(".")[-1] if "." in file.filename else ""
         if ext not in ALLOWED_EXTENSIONS:
@@ -97,9 +99,17 @@ def evaluate(
     try:
         # Save uploaded files to temp directory
         for file in files:
+            content = file.file.read()
+            if len(content) > MAX_FILE_SIZE:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File {file.filename} exceeds the 2MB size limit."
+                )
+
             file_path = Path(temp_dir) / file.filename
             with open(file_path, "wb") as f:
-                f.write(file.file.read())
+                f.write(content)
 
         # Parse custom rubric if provided
         rubric = None

@@ -1,8 +1,10 @@
 import os
 import json
+import time
 import google.generativeai as genai
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
+from cachetools import cached, TTLCache
 
 # Load environment variables
 load_dotenv()
@@ -62,6 +64,26 @@ class LLMService:
         Returns:
             List of feedback strings. Returns empty list on failure or if disabled.
         """
+        # Serialize mutable inputs for caching manually to ensure we hit cache correctly
+        missing_tuple = tuple(missing_concepts) if missing_concepts else ()
+        findings_tuple = tuple(deterministic_findings) if deterministic_findings else ()
+        
+        return self._cached_generate_semantic_feedback(
+            context_type, submission_content, rubric_context, findings_tuple, missing_tuple, relevance_status
+        )
+
+    # Cache semantic feedback for up to 24 hours. A 1000 item cache avoids redundant API calls across multiple runs.
+    @cached(cache=TTLCache(maxsize=1000, ttl=86400))
+    def _cached_generate_semantic_feedback(
+        self, 
+        context_type: str, 
+        submission_content: str, 
+        rubric_context: str, 
+        deterministic_findings: tuple,
+        missing_concepts: tuple = (),
+        relevance_status: str = "UNCERTAIN"
+    ) -> List[str]:
+
         if not self.enabled:
             return []
 
@@ -77,12 +99,21 @@ class LLMService:
             try:
                 client = genai.GenerativeModel(model)
                 prompt = self._build_prompt(context_type, submission_content, rubric_context, deterministic_findings, missing_concepts, relevance_status)
-                response = client.generate_content(prompt)
                 
-                if response.text:
-                    # Parse bullet points from response
-                    lines = [line.strip() for line in response.text.split("\n") if line.strip()]
-                    return lines if lines else [response.text.strip()]
+                # Manual exponential backoff for rate limiting when submitting highly concurrent batches
+                for try_num in range(3):
+                    try:
+                        response = client.generate_content(prompt)
+                        if response.text:
+                            lines = [line.strip() for line in response.text.split("\n") if line.strip()]
+                            return lines if lines else [response.text.strip()]
+                        break
+                    except Exception as loop_err:
+                        last_error = str(loop_err)
+                        if "429" in last_error or "quota" in last_error.lower() or "exhausted" in last_error.lower():
+                            time.sleep(2 ** try_num)  # back off: 1s, 2s, 4s
+                        else:
+                            raise loop_err
                 
                 continue
 
@@ -181,6 +212,15 @@ MANDATORY INSTRUCTIONS:
             "IRRELEVANT" if completely unrelated or wrong problem.
             "UNCERTAIN" if LLM failed or disabled (fail-closed for safety).
         """
+        return self._cached_check_relevance(problem_statement, submission_content, context_type)
+
+    @cached(cache=TTLCache(maxsize=2000, ttl=86400))
+    def _cached_check_relevance(
+        self,
+        problem_statement: str,
+        submission_content: str,
+        context_type: str = "code"
+    ) -> str:
         if not self.enabled:
             return "UNCERTAIN"
 
@@ -218,9 +258,21 @@ Verdict: [RELEVANT/PARTIAL/IRRELEVANT/UNCERTAIN]
             try:
                 # Use the configured model
                 client = genai.GenerativeModel(self.model_name or "gemini-2.0-flash")
-                response = client.generate_content(prompt)
+                response = None
                 
-                if not response.text:
+                # Check for rate limiting
+                for inner_try in range(3):
+                    try:
+                        response = client.generate_content(prompt)
+                        break
+                    except Exception as loop_err:
+                        err_str = str(loop_err).lower()
+                        if "429" in err_str or "quota" in err_str or "exhausted" in err_str:
+                            time.sleep(2 ** inner_try)
+                        else:
+                            raise loop_err
+
+                if not response or not response.text:
                     continue
                     
                 text = response.text.strip().upper()

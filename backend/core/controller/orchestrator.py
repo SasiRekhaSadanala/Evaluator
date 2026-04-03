@@ -1,3 +1,4 @@
+import concurrent.futures
 from typing import Any, Dict, List, Optional
 
 from ..agents.aggregator_agent import AggregatorAgent
@@ -93,7 +94,7 @@ class Orchestrator:
         """
         results = {}
 
-        for filename, code in submissions.items():
+        def process_submission(filename, code):
             student_name = get_student_name_from_filename(filename)
 
             # Prepare input for code agent
@@ -116,11 +117,24 @@ class Orchestrator:
             }
             final_result = self.aggregator_agent.evaluate(aggregator_input)
 
-            results[student_name] = {
+            return student_name, {
                 "file": filename,
                 "assignment_type": "code",
                 **final_result,
             }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+            future_to_student = {
+                executor.submit(process_submission, filename, code): filename
+                for filename, code in submissions.items()
+            }
+            for future in concurrent.futures.as_completed(future_to_student):
+                try:
+                    student_name, result_data = future.result()
+                    results[student_name] = result_data
+                except Exception as e:
+                    filename = future_to_student[future]
+                    print(f"Error evaluating code submission {filename}: {e}")
 
         return results
 
@@ -143,7 +157,7 @@ class Orchestrator:
         """
         results = {}
 
-        for filename, content in submissions.items():
+        def process_submission(filename, content):
             student_name = get_student_name_from_filename(filename)
 
             # Prepare input for content agent
@@ -166,11 +180,24 @@ class Orchestrator:
             }
             final_result = self.aggregator_agent.evaluate(aggregator_input)
 
-            results[student_name] = {
+            return student_name, {
                 "file": filename,
                 "assignment_type": "content",
                 **final_result,
             }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+            future_to_student = {
+                executor.submit(process_submission, filename, content): filename
+                for filename, content in submissions.items()
+            }
+            for future in concurrent.futures.as_completed(future_to_student):
+                try:
+                    student_name, result_data = future.result()
+                    results[student_name] = result_data
+                except Exception as e:
+                    filename = future_to_student[future]
+                    print(f"Error evaluating content submission {filename}: {e}")
 
         return results
 
@@ -202,7 +229,7 @@ class Orchestrator:
             for f in list(code_submissions.keys()) + list(content_submissions.keys())
         )
 
-        for student_name in all_students:
+        def process_mixed(student_name):
             agent_outputs = []
 
             # Evaluate code if available
@@ -244,11 +271,25 @@ class Orchestrator:
                 }
                 final_result = self.aggregator_agent.evaluate(aggregator_input)
 
-                results[student_name] = {
+                return student_name, {
                     "assignment_type": "mixed",
                     "agent_count": len(agent_outputs),
                     **final_result,
                 }
+            return student_name, None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+            future_to_student = {
+                executor.submit(process_mixed, student_name): student_name
+                for student_name in all_students
+            }
+            for future in concurrent.futures.as_completed(future_to_student):
+                try:
+                    student_name, result_data = future.result()
+                    if result_data:
+                        results[student_name] = result_data
+                except Exception as e:
+                    print(f"Error evaluating mixed submission for {future_to_student[future]}: {e}")
 
         return results
 

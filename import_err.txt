@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    import traceback; try: from backend.core.controller.orchestrator import Orchestrator; print('OK') except Exception as e: print(traceback.format_exc())
+                      ^^^
+SyntaxError: invalid syntax
