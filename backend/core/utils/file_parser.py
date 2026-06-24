@@ -58,9 +58,11 @@ def read_folder(folder_path: str) -> Dict[str, str]:
 
     for file_path in folder.iterdir():
         if file_path.is_file():
+            # Security: Ensure we only process the direct file, no path traversal
+            safe_name = os.path.basename(file_path.name)
             content = read_file(str(file_path))
             if content is not None:  # Only include supported files
-                submissions[file_path.name] = content
+                submissions[safe_name] = content
 
     return submissions
 
@@ -89,13 +91,14 @@ def read_submissions_by_type(folder_path: str) -> Dict[str, Dict[str, str]]:
 
     for file_path in folder.iterdir():
         if file_path.is_file():
+            safe_name = os.path.basename(file_path.name)
             content = read_file(str(file_path))
             if content is not None:
                 # C++ and Python files are code
                 if file_path.suffix.lower() in [".py", ".cpp", ".cc", ".cxx", ".h", ".hpp"]:
-                    result["code"][file_path.name] = content
+                    result["code"][safe_name] = content
                 elif file_path.suffix.lower() in [".txt", ".pdf"]:
-                    result["text"][file_path.name] = content
+                    result["text"][safe_name] = content
 
     # ── Auto-split single files for mixed evaluation ──
     # If a student has code but no matching text (or vice versa), split their file

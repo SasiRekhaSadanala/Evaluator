@@ -1,0 +1,19 @@
+﻿git : Everything 
+up-to-date
+At line:1 char:1
++ git push origin 
+main 2>&1 | Out-File 
+-Encoding utf8 
+git_push_error2.t ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (Everything   
+  up-to-date:Strin    
+g) [], RemoteExce    
+ption
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 

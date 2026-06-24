@@ -1,0 +1,2 @@
+origin	https://github.com/SasiRekhaSadanala/Evaluator.git (fetch)
+origin	https://github.com/SasiRekhaSadanala/Evaluator.git (push)
