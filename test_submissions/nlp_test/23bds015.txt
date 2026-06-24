@@ -1,0 +1,10 @@
+Department of Data Science
+NLP Assignment — Answer Sheet
+Roll Number: 23BDS015
+Subject: Natural Language Processing (NLP)
+Topic: Text Representation Techniques
+Question:
+What does TF-IDF stand for in NLP, and what is its primary purpose?
+Answer:
+TF-IDF stands for Token Frequency - Inverse Data Format. It is used in NLP to format raw text tokens into a structured data format suitable for machine learning pipelines. The Token Frequency part counts how often a token appears, while Inverse Data Format helps convert those tokens into numeric arrays.
+This is an individual assignment submission.

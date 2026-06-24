@@ -1,5 +1,6 @@
 """Service layer for evaluation API."""
 
+import re
 from typing import Any, Dict, List, Optional
 
 from backend.app.schemas import (
@@ -45,6 +46,8 @@ class EvaluatorService:
                 folder_path=request.submission_folder,
                 problem_statement=request.problem_statement,
                 ideal_reference=request.ideal_reference,
+                topic_tag=getattr(request, 'topic_tag', None),
+                transcript_text=getattr(request, 'transcript_text', None),
             )
 
             # Convert results
@@ -91,17 +94,28 @@ class EvaluatorService:
         if rubric_config is None:
             return None
 
-        # Convert to dict format expected by Rubric
+        # Start with default rubric structure (ensures dimensions always exist)
+        default = Rubric.DEFAULT_RUBRIC.copy()
         rubric_dict = {
-            "name": rubric_config.name or "Standard Rubric",
-            "version": rubric_config.version or "1.0",
+            "name": rubric_config.name or default.get("name", "Standard Rubric"),
+            "version": rubric_config.version or default.get("version", "1.0"),
         }
 
+        # Use custom dimensions if provided, otherwise use defaults
         if rubric_config.dimensions:
             rubric_dict["dimensions"] = {
                 k: (v.model_dump() if hasattr(v, "model_dump") else v)
                 for k, v in rubric_config.dimensions.items()
             }
+        else:
+            rubric_dict["dimensions"] = default.get("dimensions", {})
+
+        # Add test cases if provided
+        if rubric_config.test_cases:
+            rubric_dict["test_cases"] = [
+                tc.model_dump() if hasattr(tc, "model_dump") else tc
+                for tc in rubric_config.test_cases
+            ]
 
         return Rubric(rubric_dict)
 
@@ -121,24 +135,34 @@ class EvaluatorService:
 
         for student_name, result in raw_results.items():
             final_score = result.get("final_score", 0)
-            max_score = result.get("max_score", 100)
-            percentage = (
-                (final_score / max_score * 100) if max_score > 0 else 0
-            )
+            max_score = result.get("max_score", 10)
+            # Score is already /10 — use directly as the display value
+            percentage = final_score
 
             # Extract feedback - handle both list and combined_feedback formats
             feedback = result.get("combined_feedback", [])
             if isinstance(feedback, str):
                 feedback = [feedback]
 
+            # Clean Moodle metadata from student name for display
+            clean_name = student_name.replace("_Result", "")
+            clean_name = re.sub(r'_\d{4,6}$', '', clean_name).strip()
+
             item = EvaluationResultItem(
-                submission_id=student_name,
+                submission_id=clean_name,
                 final_score=final_score,
                 max_score=max_score,
                 percentage=round(percentage, 2),
                 feedback=feedback or [],
                 assignment_type=result.get("assignment_type", "unknown"),
                 file=result.get("file", ""),
+                # Integrity fields
+                flag_score=result.get("flag_score"),
+                flag_reasons=result.get("flag_reasons"),
+                # Student profile fields
+                percentile=result.get("percentile"),
+                improvement_delta=result.get("improvement_delta"),
+                trend=result.get("trend"),
             )
             formatted.append(item)
 

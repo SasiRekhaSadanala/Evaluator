@@ -1,32 +1,16 @@
-import sys
-import traceback
+# run_backend.py
 import os
+import uvicorn
 
-# Ensure we are in the right directory
-current_dir = os.getcwd()
-sys.path.append(current_dir)
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))  # Render sets $PORT, local defaults to 8000
 
-print(f"Starting backend from {current_dir}...")
+    print(f"Starting Evaluator 2.0 backend on port {port}...")
 
-try:
-    # Check Imports
-    import pydantic
-    print(f"Pydantic version: {pydantic.VERSION}")
-    
-    import uvicorn
-    from backend.app.main import app
-    
-    # Run Server
-    print("Launching Uvicorn on 8000...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-    
-except BaseException:
-    print("CRITICAL FAILURE")
-    with open("startup_error.log", "w") as f:
-        f.write(traceback.format_exc())
-        f.write("\n\n")
-        try:
-            import pydantic
-            f.write(f"Pydantic Version: {pydantic.VERSION}\n")
-        except:
-            f.write("Pydantic not found\n")
+    uvicorn.run(
+        "backend.app.main:app",
+        host="0.0.0.0",   # must be 0.0.0.0 for Render — never 127.0.0.1
+        port=port,
+        reload=False,      # never True in production
+        workers=1          # free tier only supports 1 worker
+    )

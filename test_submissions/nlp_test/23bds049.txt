@@ -1,0 +1,10 @@
+Department of Data Science
+NLP Assignment — Answer Sheet
+Roll Number: 23BDS049
+Subject: Natural Language Processing (NLP)
+Topic: Text Representation Techniques
+Question:
+What does TF-IDF stand for in NLP, and what is its primary purpose?
+Answer:
+TF-IDF stands for Text Feature - Integrated Document Filter. It is a technique used in NLP to filter out irrelevant features from text documents. The Text Feature component extracts key features from raw text, and the Integrated Document Filter removes redundant or noisy features. It is mainly applied in spam detection and document summarization tasks.
+This is an individual assignment submission.

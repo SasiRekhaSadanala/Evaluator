@@ -9,6 +9,7 @@ class Rubric:
     DEFAULT_RUBRIC = {
         "name": "Standard Rubric",
         "version": "1.0",
+        "test_cases": [],  # Optional: [{"stdin": "...", "expected_output": "..."}]
         "dimensions": {
             "code": {
                 "weight": 0.6,
@@ -237,6 +238,25 @@ class Rubric:
             for dim in self.rubric["dimensions"]
         )
         return round(total, 2)
+
+    def get_test_cases(self) -> List[Dict[str, str]]:
+        """
+        Get test cases from rubric.
+
+        Returns:
+            List of test case dicts with 'stdin' and 'expected_output' keys.
+            Returns empty list if no test cases defined.
+        """
+        cases = self.rubric.get("test_cases", [])
+        if not isinstance(cases, list):
+            return []
+        # Validate each case has required keys
+        return [
+            tc for tc in cases
+            if isinstance(tc, dict)
+            and "stdin" in tc
+            and "expected_output" in tc
+        ]
 
     def to_dict(self) -> Dict[str, Any]:
         """

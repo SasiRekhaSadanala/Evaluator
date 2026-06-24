@@ -1,3 +1,2 @@
-// Export all components
 export { default as FileUpload } from './FileUpload'
-export type { FileUploadData } from './FileUpload'
+export { default as AppNavbar } from './AppNavbar'

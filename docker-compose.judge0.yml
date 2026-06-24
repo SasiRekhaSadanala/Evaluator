@@ -1,0 +1,86 @@
+# Self-hosted Judge0 CE for the Evaluator project.
+# Usage:
+#   1. Open Docker Desktop
+#   2. Run: docker-compose -f docker-compose.judge0.yml up -d
+#   3. Judge0 API will be available at http://localhost:2358
+#   4. Update .env: JUDGE0_API_URL=http://localhost:2358
+
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    platform: linux/amd64
+    ports:
+      - "2358:2358"
+    privileged: true
+    environment:
+      - RAILS_ENV=production
+      - RAILS_MAX_THREADS=4
+      - SECRET_KEY_BASE=your_secret_key_base_change_me
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_password
+      - REDIS_HOST=judge0-redis
+      - REDIS_PORT=6379
+      - ENABLE_WAIT_RESULT=true
+      - ENABLE_BATCHED_SUBMISSIONS=true
+      # Disable isolate sandbox — required for Apple Silicon (ARM64)
+      - JUDGE0_ENABLE_SANDBOX=false
+      - ENABLE_SANDBOX=false
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    platform: linux/amd64
+    command: ["./scripts/workers"]
+    privileged: true
+    environment:
+      - RAILS_ENV=production
+      - RAILS_MAX_THREADS=4
+      - SECRET_KEY_BASE=your_secret_key_base_change_me
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_password
+      - REDIS_HOST=judge0-redis
+      - REDIS_PORT=6379
+      - JUDGE0_ENABLE_SANDBOX=false
+      - ENABLE_SANDBOX=false
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  judge0-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_password
+    volumes:
+      - judge0-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  judge0-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  judge0-postgres-data:

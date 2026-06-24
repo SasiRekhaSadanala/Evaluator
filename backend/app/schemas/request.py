@@ -5,6 +5,30 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+class TestCase(BaseModel):
+    """A single test case for code execution.
+    
+    Accepts both formats:
+      - {"stdin": "...", "expected_output": "..."}
+      - {"input": "...", "output": "..."}
+    """
+
+    stdin: str = Field(default="", description="Standard input for the test case")
+    expected_output: str = Field(default="", description="Expected standard output")
+
+    @classmethod
+    def from_flexible(cls, data: dict) -> "TestCase":
+        """Create TestCase from dict with flexible key names."""
+        stdin = data.get("stdin") or data.get("input") or ""
+        expected_output = data.get("expected_output") or data.get("output") or ""
+        # Handle case where input/output are non-string (e.g., lists, ints)
+        if not isinstance(stdin, str):
+            stdin = str(stdin)
+        if not isinstance(expected_output, str):
+            expected_output = str(expected_output)
+        return cls(stdin=stdin, expected_output=expected_output)
+
+
 class RubricDimension(BaseModel):
     """Rubric dimension configuration."""
 
@@ -22,7 +46,11 @@ class RubricConfig(BaseModel):
     version: Optional[str] = Field(default="1.0", description="Rubric version")
     dimensions: Optional[Dict[str, RubricDimension]] = Field(
         default=None,
-        description="Dimensions with code and content weights. If not provided, uses default.",
+        description="Dimensions with code and content weights.",
+    )
+    test_cases: Optional[List[TestCase]] = Field(
+        default=None,
+        description="Test cases for code execution via Judge0.",
     )
 
     class Config:
@@ -61,8 +89,8 @@ class EvaluationRequest(BaseModel):
 
     assignment_type: str = Field(
         ...,
-        description="Type of assignment: 'code', 'content', or 'mixed'",
-        pattern="^(code|content|mixed)$",
+        description="Type of assignment: 'code', 'content', 'mixed', or 'transcript'",
+        pattern="^(code|content|mixed|transcript)$",
     )
     submission_folder: str = Field(
         ..., description="Path to folder containing student submissions"
@@ -73,9 +101,16 @@ class EvaluationRequest(BaseModel):
     ideal_reference: Optional[str] = Field(
         default=None, description="Reference content (for content assignments)"
     )
+    transcript_text: Optional[str] = Field(
+        default=None, description="VTT transcript text (for transcript summary assignments)"
+    )
     rubric: Optional[RubricConfig] = Field(
         default=None,
         description="Custom rubric configuration. If not provided, uses default rubric.",
+    )
+    topic_tag: Optional[str] = Field(
+        default=None,
+        description="Topic tag for student progress tracking (e.g., 'sorting', 'graphs').",
     )
 
     class Config:
@@ -99,6 +134,28 @@ class EvaluationResultItem(BaseModel):
     feedback: List[str] = Field(..., description="List of feedback items")
     assignment_type: str = Field(..., description="Type of assignment evaluated")
     file: str = Field(..., description="Submission filename")
+    # --- Integrity fields (Feature 4) ---
+    flag_score: Optional[float] = Field(
+        default=None,
+        description="Integrity flag score (0–1). >0.7 triggers review queue.",
+    )
+    flag_reasons: Optional[List[str]] = Field(
+        default=None,
+        description="Reasons for integrity flag.",
+    )
+    # --- Student profile fields (Feature 6) ---
+    percentile: Optional[int] = Field(
+        default=None,
+        description="Percentile rank within class (0–100).",
+    )
+    improvement_delta: Optional[float] = Field(
+        default=None,
+        description="Score change vs student's recent average.",
+    )
+    trend: Optional[str] = Field(
+        default=None,
+        description="Performance trend: 'improving', 'stable', or 'declining'.",
+    )
 
 
 class EvaluationResponse(BaseModel):

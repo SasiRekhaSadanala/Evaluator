@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined');
+
 * {
   margin: 0;
   padding: 0;
@@ -14,5 +17,163 @@ html {
 }
 
 body {
-  @apply bg-slate-950 text-slate-200 antialiased;
+  background-color: #060d20;
+  color: #dae2fd;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   GLASS & SURFACE UTILITIES
+   ============================================ */
+
+.glass-panel {
+  background: rgba(19, 27, 46, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(64, 69, 84, 0.15);
+}
+
+.ghost-border {
+  border: 1px solid rgba(64, 69, 84, 0.15);
+}
+
+.glass-edge {
+  border-top: 1px solid rgba(192, 193, 255, 0.08);
+}
+
+/* ============================================
+   GRADIENT TEXT
+   ============================================ */
+
+.hero-gradient-text {
+  background: linear-gradient(180deg, #dae2fd 20%, #8455ef 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   LAYOUT UTILITIES
+   ============================================ */
+
+.asymmetric-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .asymmetric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   MATERIAL ICONS
+   ============================================ */
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ============================================
+   SHADOWS
+   ============================================ */
+
+.shadow-tinted {
+  box-shadow: 0px 20px 40px rgba(7, 0, 108, 0.12);
+}
+
+.shadow-violet {
+  box-shadow: 0 0 20px rgba(192, 193, 255, 0.15);
+}
+
+/* ============================================
+   GLOW EFFECTS
+   ============================================ */
+
+.glow-border {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23C0C1FF' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
+/* ============================================
+   ANIMATION DELAYS
+   ============================================ */
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(64, 69, 84, 0.4);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(64, 69, 84, 0.6);
+}
+
+/* ============================================
+   RANGE SLIDER
+   ============================================ */
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #222a3d;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c0c1ff, #8083ff);
+  margin-top: -7px;
+  box-shadow: 0 0 10px rgba(192, 193, 255, 0.4);
+}
+
+/* ============================================
+   FOCUS BEAM DIVIDER
+   ============================================ */
+
+.focus-beam {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c0c1ff, transparent);
 }

@@ -1,8 +1,18 @@
-fastapi>=0.100.0
-uvicorn>=0.23.0
-python-dotenv>=1.0.0
-google-generativeai>=0.3.0
-pydantic>=2.0.0
-python-multipart>=0.0.6
-pypdf>=5.0.0
-cachetools>=5.3.0
+fastapi
+uvicorn
+python-dotenv
+pydantic
+python-multipart
+requests
+httpx
+# --- Core dependencies ---
+psycopg2-binary
+sentence-transformers
+numpy
+pypdf
+PyJWT
+# --- AST parsing ---
+tree-sitter
+tree-sitter-python
+tree-sitter-cpp
+nest-asyncio

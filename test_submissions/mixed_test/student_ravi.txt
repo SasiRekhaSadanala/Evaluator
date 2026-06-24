@@ -1,0 +1,31 @@
+Binary Search Algorithm - Explanation
+
+Binary search is a highly efficient searching algorithm that works on sorted arrays. Unlike linear search which checks every element one by one, binary search repeatedly divides the search interval in half, making it significantly faster for large datasets.
+
+How Binary Search Works:
+1. Start with the entire sorted array
+2. Compare the target value with the middle element
+3. If the target equals the middle element, we found it
+4. If the target is less than the middle element, search the left half
+5. If the target is greater than the middle element, search the right half
+6. Repeat until the element is found or the search space is exhausted
+
+Time Complexity Analysis:
+- Best Case: O(1) - when the target is at the middle position
+- Average Case: O(log n) - the search space halves with each comparison
+- Worst Case: O(log n) - even in the worst case, we only need log2(n) comparisons
+
+Space Complexity:
+- Iterative approach: O(1) - only uses a constant amount of extra space
+- Recursive approach: O(log n) - due to the call stack depth
+
+Why Binary Search is Important:
+Binary search is fundamental in computer science because it demonstrates the divide and conquer paradigm. It is used extensively in real-world applications such as database indexing, searching in sorted files, and finding elements in balanced binary search trees.
+
+Comparison with Linear Search:
+For an array of 1 million elements, linear search may need up to 1,000,000 comparisons in the worst case, while binary search needs at most 20 comparisons (log2(1000000) ≈ 20). This makes binary search approximately 50,000 times faster for large datasets.
+
+Limitations:
+- The array must be sorted beforehand
+- Random access is required (works with arrays, not linked lists)
+- For very small arrays, linear search may be faster due to lower overhead

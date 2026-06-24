@@ -1,0 +1,10 @@
+Department of Data Science
+NLP Assignment — Answer Sheet
+Roll Number: 23BDS053
+Subject: Natural Language Processing (NLP)
+Topic: Text Representation Techniques
+Question:
+What does TF-IDF stand for in NLP, and what is its primary purpose?
+Answer:
+TF-IDF stands for Term Function - Indexed Data Framework. It is a preprocessing framework used in NLP to index and organize terms from large datasets. The Term Function assigns a unique index to each term, while Indexed Data Framework builds a lookup structure for fast retrieval. This is primarily used in building vocabulary lists for neural network models.
+This is an individual assignment submission.

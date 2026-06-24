@@ -1,0 +1,10 @@
+Department of Data Science
+NLP Assignment — Answer Sheet
+Roll Number: 23BDS031
+Subject: Natural Language Processing (NLP)
+Topic: Text Representation Techniques
+Question:
+What does TF-IDF stand for in NLP, and what is its primary purpose?
+Answer:
+TF-IDF stands for Term Frequency - Inverse Document Frequency. It is a numerical statistic used in NLP and information retrieval to reflect how important a word is to a document within a collection (corpus). Term Frequency (TF) measures how often a term appears in a document, while Inverse Document Frequency (IDF) penalizes terms that appear frequently across many documents, making common words like 'the' or 'is' less significant. TF-IDF is widely used in text mining, search engines, and feature extraction for text classification.
+This is an individual assignment submission.

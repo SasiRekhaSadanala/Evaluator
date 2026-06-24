@@ -1,0 +1,110 @@
+Binary Search Algorithm - Explanation and Implementation
+=========================================================
+
+Binary search is one of the most fundamental and efficient searching algorithms
+in computer science. It works on the principle of divide and conquer, where we
+repeatedly divide the search interval in half until we either find the target
+element or determine that it does not exist in the array.
+
+How Binary Search Works:
+
+The algorithm starts by examining the middle element of a sorted array. If the
+target value matches the middle element, the search is complete. If the target
+is less than the middle element, the search continues in the lower half. If it
+is greater, the search continues in the upper half. This process repeats until
+the target is found or the search space is empty.
+
+Step by Step Process:
+1. Initialize two pointers: left at the beginning and right at the end of the array
+2. Calculate the middle index: mid = left + (right - left) // 2
+3. Compare the middle element with the target
+4. If they match, return the index
+5. If target is smaller, search the left subarray by setting right = mid - 1
+6. If target is larger, search the right subarray by setting left = mid + 1
+7. Repeat steps 2-6 until the element is found or left exceeds right
+
+Here is my Python implementation of binary search:
+
+```python
+def binary_search(arr, target):
+    """
+    Iterative binary search implementation.
+    Returns the index of target if found, -1 otherwise.
+    """
+    left = 0
+    right = len(arr) - 1
+
+    while left <= right:
+        mid = left + (right - left) // 2
+
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return -1
+```
+
+I also implemented a recursive version to demonstrate the divide and conquer approach:
+
+```python
+def binary_search_recursive(arr, target, left, right):
+    """Recursive binary search using divide and conquer."""
+    if left > right:
+        return -1
+
+    mid = left + (right - left) // 2
+
+    if arr[mid] == target:
+        return mid
+    elif arr[mid] < target:
+        return binary_search_recursive(arr, target, mid + 1, right)
+    else:
+        return binary_search_recursive(arr, target, left, mid - 1)
+```
+
+Time Complexity Analysis:
+
+The time complexity of binary search is O(log n) in both the average and worst
+cases. This is because with each comparison, we eliminate half of the remaining
+elements. In the best case, the time complexity is O(1) when the target happens
+to be the middle element on the first check.
+
+To understand why it is O(log n), consider an array of 1,000,000 elements.
+After 1 comparison, we have 500,000 elements left. After 2, we have 250,000.
+After 20 comparisons, we have narrowed it down to just 1 element. This means
+binary search needs at most log2(1,000,000) which is approximately 20 comparisons.
+
+Space Complexity:
+
+For the iterative implementation, the space complexity is O(1) because we only
+use a constant number of variables (left, right, mid) regardless of input size.
+For the recursive implementation, the space complexity is O(log n) due to the
+call stack growing with each recursive call.
+
+Comparison with Linear Search:
+
+Linear search has a time complexity of O(n), meaning it may need to check every
+single element in the worst case. For an array of 1 million elements:
+- Linear search: up to 1,000,000 comparisons
+- Binary search: at most 20 comparisons
+
+This makes binary search approximately 50,000 times faster for large datasets.
+However, binary search requires the array to be sorted first, which adds an
+O(n log n) preprocessing cost if the data is unsorted.
+
+Limitations of Binary Search:
+- The input array must be sorted beforehand
+- It requires random access to elements (works with arrays, not linked lists)
+- For very small arrays (less than 10 elements), linear search may actually be
+  faster due to lower constant overhead and better cache performance
+- It cannot be used on unsorted data without first sorting it
+
+Real World Applications:
+- Database indexing and query optimization
+- Finding elements in sorted files or logs
+- Searching in balanced binary search trees
+- Dictionary and phone book lookups
+- Version control systems (git bisect uses binary search to find bugs)

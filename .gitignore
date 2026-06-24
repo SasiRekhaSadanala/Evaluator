@@ -49,3 +49,13 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# AI and Tool State
+.agents/
+.claude/
+.kiro/
+.stitch/
+skills-lock.json
+
+# Temporary Files
+landing_page_v3.html

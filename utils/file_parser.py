@@ -137,14 +137,30 @@ def _clean_text(content: str) -> str:
 
 def get_student_name_from_filename(filename: str) -> str:
     """
-    Extract student identifier from filename.
-    Returns [stem]_Result to match user requirements.
+    Extract clean student name from filename.
 
-    Args:
-        filename: Name of submission file
+    Handles Moodle-style filenames like:
+        'Deepak Paul Tirkey_35222_assignsubmission_onlinetext.html'
+        → 'Deepak Paul Tirkey'
 
-    Returns:
-        Refined submission identifier
+        'student_alice.py'
+        → 'student_alice'
+
+    Logic:
+        1. Remove file extension
+        2. If filename matches Moodle pattern (Name_DIGITS_assign...),
+           extract only the name part before _DIGITS_
+        3. Otherwise, use the full stem
+        4. Append '_Result' suffix
     """
+    import re
     name_without_ext = Path(filename).stem
+
+    # Moodle pattern: Name_12345_assignsubmission_...
+    # Match: everything before _<5+ digits>_
+    moodle_match = re.match(r'^(.+?)_\d{4,}_', name_without_ext)
+    if moodle_match:
+        clean_name = moodle_match.group(1).strip()
+        return f"{clean_name}_Result"
+
     return f"{name_without_ext}_Result"

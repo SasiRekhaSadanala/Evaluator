@@ -1,0 +1,157 @@
+Binary Search Algorithm - Explanation and Implementation
+=========================================================
+
+Binary search is one of the most fundamental and efficient searching algorithms
+in computer science. It works on the principle of divide and conquer, where we
+repeatedly divide the search interval in half until we either find the target
+element or determine that it does not exist in the array. Unlike linear search,
+which scans every element one by one, binary search exploits the sorted order of
+the data to dramatically reduce the number of comparisons needed.
+
+How Binary Search Works:
+
+The algorithm starts by examining the middle element of a sorted array. If the
+target value matches the middle element, the search is complete. If the target
+is less than the middle element, the search continues in the lower half. If it
+is greater, the search continues in the upper half. This process repeats until
+the target is found or the search space is empty.
+
+Why Binary Search Over Linear Search:
+
+Linear search checks each element sequentially and works on both sorted and
+unsorted data, but it is inefficient for large datasets with a worst-case time
+complexity of O(n). Binary search, by contrast, requires sorted data but
+leverages that order to halve the remaining search space on every step, achieving
+O(log n) performance. For a dataset of 1,000,000 elements, linear search may
+require up to 1,000,000 comparisons while binary search needs at most 20. This
+makes binary search approximately 50,000 times faster for large sorted datasets.
+
+Step by Step Process:
+1. Initialize two pointers: left at the beginning and right at the end of the array
+2. Calculate the middle index: mid = left + (right - left) // 2
+3. Compare the middle element with the target
+4. If they match, return the index
+5. If target is smaller, search the left subarray by setting right = mid - 1
+6. If target is larger, search the right subarray by setting left = mid + 1
+7. Repeat steps 2-6 until the element is found or left exceeds right
+
+Concrete Walkthrough Example:
+
+Consider searching for the number 7 in the sorted array [1, 3, 5, 7, 9].
+
+  Step 1: left = 0, right = 4, mid = 2  ->  arr[2] = 5
+          5 < 7, so we move left to mid + 1 = 3
+
+  Step 2: left = 3, right = 4, mid = 3  ->  arr[3] = 7
+          7 == 7, target found at index 3
+
+Binary search located 7 in just 2 comparisons instead of the 4 a linear search
+would have required by scanning from the beginning.
+
+Here is my Python implementation of binary search:
+
+def binary_search(arr, target):
+    """
+    Iterative binary search implementation.
+    Returns the index of target if found, -1 otherwise.
+    """
+    left = 0
+    right = len(arr) - 1
+
+    # Continuously narrow down the search range by comparing the middle
+    # element to the target until the boundaries cross.
+    while left <= right:
+        mid = left + (right - left) // 2
+
+        # Check if the target is present at the calculated middle index.
+        if arr[mid] == target:
+            return mid
+        # If the target is greater, ignore the left half by shifting the
+        # left pointer just past the middle.
+        elif arr[mid] < target:
+            left = mid + 1
+        # If the target is smaller, ignore the right half by shifting the
+        # right pointer just before the middle.
+        else:
+            right = mid - 1
+
+    # Target was not found in the array.
+    return -1
+
+
+I also implemented a recursive version to demonstrate the divide and conquer
+approach more explicitly:
+
+def binary_search_recursive(arr, target, left, right):
+    """
+    Recursive binary search using divide and conquer.
+    Returns the index of target if found, -1 otherwise.
+    """
+    # Base case: search space is empty, target does not exist in the array.
+    if left > right:
+        return -1
+
+    mid = left + (right - left) // 2
+
+    # Check if the target is at the middle index.
+    if arr[mid] == target:
+        return mid
+    # If the target is greater, recursively search only the right subarray.
+    elif arr[mid] < target:
+        return binary_search_recursive(arr, target, mid + 1, right)
+    # If the target is smaller, recursively search only the left subarray.
+    else:
+        return binary_search_recursive(arr, target, left, mid - 1)
+
+
+Iterative vs Recursive Implementation:
+
+Both versions implement the same core logic and share identical time complexity,
+but they differ in how they manage state. The iterative version uses a while loop
+to update the left and right pointers in place, keeping all computation within
+a single stack frame. The recursive version, by contrast, expresses the same
+narrowing process through successive function calls, which the Python call stack
+tracks automatically. This difference directly impacts space complexity: the
+iterative approach uses O(1) space since only three variables (left, right, mid)
+are maintained regardless of input size, while the recursive approach uses O(log n)
+space because each call adds a new frame to the call stack, and the depth of
+those calls grows logarithmically with the input size. For most practical purposes
+the iterative version is preferred to avoid stack overflow risks on very large
+inputs.
+
+Time Complexity Analysis:
+
+The time complexity of binary search is O(log n) in both the average and worst
+cases. This is because with each comparison, we eliminate half of the remaining
+elements. In the best case, the time complexity is O(1) when the target happens
+to be the middle element on the first check.
+
+To understand why it is O(log n), consider an array of 1,000,000 elements.
+After 1 comparison, we have 500,000 elements left. After 2, we have 250,000.
+After 20 comparisons, we have narrowed it down to just 1 element. This means
+binary search needs at most log2(1,000,000) which is approximately 20 comparisons.
+
+Space Complexity:
+
+For the iterative implementation, the space complexity is O(1) because we only
+use a constant number of variables (left, right, mid) regardless of input size.
+Building on that efficiency, we must also consider the memory usage of the
+recursive approach. Because each recursive call is placed on the call stack and
+the recursion depth mirrors the number of halvings, the recursive implementation
+carries an O(log n) space cost. For very deep recursion on large arrays, this
+could risk a stack overflow in languages without tail-call optimization like Python.
+
+Limitations of Binary Search:
+- The input array must be sorted beforehand
+- It requires random access to elements (works with arrays, not linked lists)
+- For very small arrays (less than 10 elements), linear search may actually be
+  faster due to lower constant overhead and better cache performance
+- It cannot be used on unsorted data without first sorting it, which introduces
+  an O(n log n) preprocessing cost
+
+Real World Applications:
+- Database indexing and query optimization
+- Finding elements in sorted files or logs
+- Searching in balanced binary search trees
+- Dictionary and phone book lookups
+- Version control systems (git bisect uses binary search to find bugs)

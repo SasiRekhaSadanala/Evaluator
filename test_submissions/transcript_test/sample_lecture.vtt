@@ -1,0 +1,33 @@
+WEBVTT
+
+1
+00:30:00.000 --> 00:30:10.000
+Rajendra H: So, today we will be discussing supervised learning and the Iris dataset.
+
+2
+00:30:10.000 --> 00:30:30.000
+Rajendra H: We need to import libraries like NumPy for numerical operations, Pandas for data manipulation, Matplotlib for plotting, and Seaborn for advanced visualizations.
+
+3
+00:30:30.000 --> 00:31:00.000
+Rajendra H: We will use scikit-learn to load the Iris dataset. It has 3 classes and 4 features: sepal length, sepal width, petal length, petal width.
+
+4
+00:31:00.000 --> 00:31:30.000
+Rajendra H: We use t-SNE for dimensionality reduction to visualize high-dimensional data in 2D plots. It retains local structure of the data.
+
+5
+00:31:30.000 --> 00:32:00.000
+Rajendra H: StandardScaler is used for data preprocessing, centering data around mean zero with standard deviation one. This is standardization.
+
+6
+00:32:00.000 --> 00:32:30.000
+Rajendra H: We train the model using logistic regression, which is the best model for classification tasks. The training uses 80-20 train test split.
+
+7
+00:32:30.000 --> 00:33:00.000
+Rajendra H: The confusion matrix shows accuracy of the model. We also look at precision, recall, and F1 score for model evaluation.
+
+8
+00:33:00.000 --> 00:33:20.000
+Rajendra H: Precision is true positive divided by true positive plus false positive. Recall uses false negative instead. F1 score is the harmonic mean of precision and recall.

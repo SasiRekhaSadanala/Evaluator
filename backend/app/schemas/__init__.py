@@ -7,6 +7,7 @@ from .request import (
     HealthCheckResponse,
     RubricConfig,
     RubricDimension,
+    TestCase,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "HealthCheckResponse",
     "RubricConfig",
     "RubricDimension",
+    "TestCase",
 ]
